@@ -778,5 +778,276 @@ function FigTwinsRoom() {
   );
 }
 
+// ═══════════════════════════ PART III — THE MISSING DIMENSION ═══════════════════════════
+function useClock(running = true, speed = 1) {
+  const [t, setT] = useState(0);
+  useEffect(() => {
+    if (!running) return;
+    let id, t0 = performance.now();
+    const tick = (now) => { setT(((now - t0) / 1000) * speed); id = requestAnimationFrame(tick); };
+    id = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(id);
+  }, [running, speed]);
+  return t;
+}
+
+// ── SCENE 14 : the shadow — a bounce on a line is the shadow of a circle; the needle gets two clocks ──
+function FigShadowRoom() {
+  const room = Room.usePresenter();
+  const running = room.state.shadowRun !== false;
+  const off = room.state.clockOffset ?? 0;                 // degrees the V-clock lags; locked at 0 until scene 15
+  const unlocked = !!room.state.unlockDelay;
+  const t = useClock(running, 1);
+  const w = 2 * Math.PI * 0.4, ph = w * t;
+  const th = 35 * DEG;
+  // left: the field tip of a linear beam at θ bounces on a diameter
+  const L = { cx: 170, cy: 250, R: 120 };
+  const ex = Math.cos(th) * Math.cos(ph), ey = Math.sin(th) * Math.cos(ph);
+  // middle: a point going round a circle and its shadow on the same diameter
+  const M = { cx: 450, cy: 250, R: 120 };
+  const px = Math.cos(ph), py = Math.sin(ph);
+  const sx = Math.cos(th) * px * Math.cos(th) + Math.sin(th) * px * Math.sin(th);   // projection of (px, 0) onto the θ line: px·cosθ, px·sinθ
+  // right: the needle with a clock on each component; V lags by `off`
+  const N = { ox: 640, oy: 330, S: 190 };
+  const hx = Math.cos(th) * Math.cos(ph), vy = Math.sin(th) * Math.cos(ph - off * DEG);
+  const Clock = ({ x, y, a, col }) => (<g><circle cx={x} cy={y} r="22" fill="#FFFFFF" stroke={col} strokeWidth="2.5" /><line x1={x} y1={y} x2={x + 18 * Math.cos(a)} y2={y - 18 * Math.sin(a)} stroke={col} strokeWidth="3" strokeLinecap="round" /></g>);
+  return (
+    <div>
+      <svg viewBox="0 0 900 480" style={svgStyle}>
+        <Txt x={L.cx} y={40} size={16} fill={INK} bold>a linear beam's field tip</Txt>
+        <circle cx={L.cx} cy={L.cy} r={L.R} fill="none" stroke={LBLUE} strokeWidth="1.5" strokeDasharray="5 5" />
+        <line x1={L.cx - L.R * Math.cos(th)} y1={L.cy + L.R * Math.sin(th)} x2={L.cx + L.R * Math.cos(th)} y2={L.cy - L.R * Math.sin(th)} stroke={SOFT} strokeWidth="2" />
+        <line x1={L.cx} y1={L.cy} x2={L.cx + L.R * ex} y2={L.cy - L.R * ey} stroke={GOLD} strokeWidth="5" strokeLinecap="round" />
+        <circle cx={L.cx + L.R * ex} cy={L.cy - L.R * ey} r="9" fill={GOLD} stroke={INK} strokeWidth="2" />
+        <Txt x={L.cx} y={L.cy + L.R + 40} size={13}>it bounces along a line</Txt>
+
+        <Txt x={M.cx} y={40} size={16} fill={INK} bold>a point going round — and its shadow</Txt>
+        <circle cx={M.cx} cy={M.cy} r={M.R} fill="none" stroke={INK} strokeWidth="2" />
+        <line x1={M.cx - M.R * Math.cos(th)} y1={M.cy + M.R * Math.sin(th)} x2={M.cx + M.R * Math.cos(th)} y2={M.cy - M.R * Math.sin(th)} stroke={SOFT} strokeWidth="2" />
+        <circle cx={M.cx + M.R * (px * Math.cos(th) - py * Math.sin(th))} cy={M.cy - M.R * (px * Math.sin(th) + py * Math.cos(th))} r="9" fill={PURP} stroke={INK} strokeWidth="2" />
+        <line x1={M.cx + M.R * (px * Math.cos(th) - py * Math.sin(th))} y1={M.cy - M.R * (px * Math.sin(th) + py * Math.cos(th))} x2={M.cx + M.R * px * Math.cos(th)} y2={M.cy - M.R * px * Math.sin(th)} stroke={SOFT} strokeWidth="1.5" strokeDasharray="4 4" />
+        <circle cx={M.cx + M.R * px * Math.cos(th)} cy={M.cy - M.R * px * Math.sin(th)} r="9" fill={GOLD} stroke={INK} strokeWidth="2" />
+        <Txt x={M.cx} y={M.cy + M.R + 40} size={13}>the same bounce — as a shadow</Txt>
+
+        <Txt x={N.ox + 80} y={40} size={16} fill={INK} bold>the needle, with a clock on each part</Txt>
+        <line x1={N.ox} y1={N.oy} x2={N.ox + N.S} y2={N.oy} stroke={GOLD} strokeWidth="3" />
+        <line x1={N.ox} y1={N.oy} x2={N.ox} y2={N.oy - N.S} stroke={TEAL} strokeWidth="3" />
+        <Txt x={N.ox + N.S} y={N.oy + 22} size={12} fill={GOLD} bold>H-part</Txt>
+        <Txt x={N.ox - 8} y={N.oy - N.S + 4} anchor="end" size={12} fill={TEAL} bold>V-part</Txt>
+        <line x1={N.ox} y1={N.oy} x2={N.ox + N.S * hx} y2={N.oy - N.S * vy} stroke={PURP} strokeWidth="5" strokeLinecap="round" />
+        <circle cx={N.ox + N.S * hx} cy={N.oy - N.S * vy} r="9" fill={PURP} stroke={INK} strokeWidth="2" />
+        <Clock x={N.ox + N.S + 50} y={N.oy} a={ph} col={GOLD} />
+        <Clock x={N.ox} y={N.oy - N.S - 50} a={ph - off * DEG} col={TEAL} />
+        <Txt x={N.ox + 100} y={N.oy + 60} size={13}>{off === 0 ? "both clocks tick in step → the tip bounces on a line" : `V-clock lags by ${off}° → the tip goes round`}</Txt>
+      </svg>
+      <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 6, alignItems: "center", flexWrap: "wrap" }}>
+        <Button ghost onClick={() => room.publish({ shadowRun: !running }, true)}>{running ? "pause" : "play"}</Button>
+        <span style={{ fontFamily: MONO, fontSize: 14, color: unlocked ? INK : SOFT }}>offset the clocks</span>
+        <input type="range" min="0" max="180" step="5" value={off} disabled={!unlocked} onChange={(e) => room.publish({ clockOffset: parseInt(e.target.value) })} style={{ width: 240, accentColor: TEAL }} />
+        <span style={{ fontFamily: MONO, fontSize: 13, color: SOFT }}>{unlocked ? `${off}°` : "locked until the next scene"}</span>
+      </div>
+    </div>
+  );
+}
+
+// ── SCENE 15 : the impostor — pure beams inside the disk; the delay question lifts them out ──
+function FigImpostorRoom() {
+  const room = Room.usePresenter();
+  const bs = beamsOf(room).filter((b) => hasQ(b, 0) && hasQ(b, 45));
+  const lift = !!room.state.lift;
+  const cx = 250, cy = 260, R = 190;
+  const X = (u) => cx + u * 2 * R, Y = (v) => cy - v * 2 * R;
+  const cx2 = 660;
+  const withC = bs.filter((b) => hasQ(b, "C"));
+  return (
+    <div>
+      <svg viewBox="0 0 900 520" style={svgStyle}>
+        <Txt x={cx} y={34} size={16} fill={INK} bold>the disk · x from the 0° sheet, y from the 45° sheet</Txt>
+        <circle cx={cx} cy={cy} r={R} fill="none" stroke={INK} strokeWidth="3" />
+        <line x1={X(-0.55)} y1={cy} x2={X(0.55)} y2={cy} stroke={SOFT} strokeWidth="1.5" /><line x1={cx} y1={Y(-0.55)} x2={cx} y2={Y(0.55)} stroke={SOFT} strokeWidth="1.5" />
+        <circle cx={cx} cy={cy} r="6" fill={SOFT} /><Txt x={cx} y={cy + R + 30} size={13}>centre = no information?</Txt>
+        {bs.map((b) => { const st = Room.stokesOf(b.q), r = Math.hypot(st.s1, st.s2), inside = b.noise < 0.05 && r < 0.42;
+          return (<g key={b.slot}>
+            {inside && <circle cx={X(st.s1)} cy={Y(st.s2)} r="22" fill="none" stroke={RED} strokeWidth="3"><animate attributeName="r" values="16;26;16" dur="1.2s" repeatCount="indefinite" /></circle>}
+            <circle cx={X(st.s1)} cy={Y(st.s2)} r="9" fill={b.noise > 0.05 ? SOFT : GOLD} opacity="0.85" stroke={INK} strokeWidth="1.5" />
+            <text x={X(st.s1)} y={Y(st.s2) - 14} textAnchor="middle" fontSize="16">{b.tag}</text>
+          </g>); })}
+        <Txt x={cx} y={490} size={14} fill={RED} bold>{bs.some((b) => b.noise < 0.05 && Math.hypot(Room.stokesOf(b.q).s1, Room.stokesOf(b.q).s2) < 0.42) ? "red rings: no noise at all — pure — yet inside the disk. Two different things at one point." : "waiting for beams with both the 0° and the 45° tally"}</Txt>
+
+        <Txt x={cx2} y={34} size={16} fill={INK} bold>{lift ? "side view · y from the 45° sheet, up from the delay question" : "the third question: delay, then a sheet"}</Txt>
+        {lift ? <>
+          <circle cx={cx2} cy={cy} r={R} fill="none" stroke={INK} strokeWidth="3" />
+          <line x1={cx2 - R - 20} y1={cy} x2={cx2 + R + 20} y2={cy} stroke={SOFT} strokeWidth="1.5" /><line x1={cx2} y1={cy - R - 20} x2={cx2} y2={cy + R + 20} stroke={SOFT} strokeWidth="1.5" />
+          <Txt x={cx2 + R + 30} y={cy + 5} anchor="start" size={12}>45°</Txt><Txt x={cx2} y={cy - R - 28} size={12}>delay question</Txt>
+          {withC.map((b) => { const st = Room.stokesOf(b.q); return (<g key={b.slot}>
+            <line x1={cx2 + st.s2 * 2 * R} y1={cy} x2={cx2 + st.s2 * 2 * R} y2={cy - st.s3 * 2 * R} stroke={PURP} strokeWidth="2" strokeDasharray="4 3" />
+            <circle cx={cx2 + st.s2 * 2 * R} cy={cy - st.s3 * 2 * R} r="9" fill={b.noise > 0.05 ? SOFT : GOLD} opacity="0.85" stroke={INK} strokeWidth="1.5" />
+            <text x={cx2 + st.s2 * 2 * R} y={cy - st.s3 * 2 * R - 14} textAnchor="middle" fontSize="16">{b.tag}</text>
+          </g>); })}
+          <Txt x={cx2} y={490} size={14} fill={INK}>the impostors leave the plane: the disk was a slice of something bigger</Txt>
+        </> : <>
+          <circle cx={cx2 - 190} cy={cy} r="24" fill="#FFF4E8" stroke={GOLD} strokeWidth="3" />
+          <line x1={cx2 - 160} y1={cy} x2={cx2 + 190} y2={cy} stroke={LBLUE} strokeWidth="6" />
+          <rect x={cx2 - 90} y={cy - 60} width="36" height="120" rx="8" fill="#EDE7F9" stroke={PURP} strokeWidth="3" />
+          <Txt x={cx2 - 72} y={cy + 90} size={13} fill={PURP} bold>delay</Txt>
+          <Txt x={cx2 - 72} y={cy + 108} size={12}>V lags H by ¼ turn</Txt>
+          <Sheet x={cx2 + 60} y={cy} size={90} a={0} label="0° sheet" />
+          <Txt x={cx2} y={cy - 110} size={14}>{`${withC.length} of ${bs.length} beams have answered it`}</Txt>
+          <Txt x={cx2} y={490} size={14} fill={INK}>phones: ask your beam the delay question — 25 photons</Txt>
+        </>}
+      </svg>
+      <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 6 }}>
+        <Button active={room.state.question === "C"} onClick={() => room.publish({ question: "C", unlockDelay: true }, true)}>ask the delay question</Button>
+        <Button active={lift} onClick={() => room.publish({ lift: !lift }, true)}>{lift ? "back to the disk" : "lift"}</Button>
+      </div>
+    </div>
+  );
+}
+
+// ── shared: the ball ──
+function Ball({ cx, cy, R, view, children, axes = true }) {
+  const P = (sv) => { const q = Room.project(sv, view); return { x: cx + q.x * 2 * R, y: cy - q.y * 2 * R, depth: q.depth }; };
+  const ring = (fn, n = 72) => Array.from({ length: n + 1 }, (_, i) => { const a = (i / n) * 2 * Math.PI; const q = P(fn(a)); return `${q.x.toFixed(1)},${q.y.toFixed(1)}`; }).join(" ");
+  const eq = ring((a) => ({ s1: 0.5 * Math.cos(a), s2: 0.5 * Math.sin(a), s3: 0 }));
+  const mer = ring((a) => ({ s1: 0.5 * Math.cos(a), s2: 0, s3: 0.5 * Math.sin(a) }));
+  const ax = (sv, label, col) => { const q = P(sv); return (<g key={label}><line x1={cx} y1={cy} x2={q.x} y2={q.y} stroke={col} strokeWidth="2" opacity={q.depth < 0 ? 0.35 : 0.9} /><Txt x={q.x + (q.x - cx) * 0.12} y={q.y + (q.y - cy) * 0.12 + 5} size={12} fill={col} bold>{label}</Txt></g>); };
+  return (
+    <g>
+      <circle cx={cx} cy={cy} r={R} fill="#FFFFFF" stroke={INK} strokeWidth="2.5" />
+      <polyline points={eq} fill="none" stroke={SOFT} strokeWidth="1.5" strokeDasharray="5 4" />
+      <polyline points={mer} fill="none" stroke={SOFT} strokeWidth="1" strokeDasharray="3 4" />
+      {axes && [ax({ s1: 0.6, s2: 0, s3: 0 }, "H", GOLD), ax({ s1: -0.6, s2: 0, s3: 0 }, "V", GOLD), ax({ s1: 0, s2: 0.6, s3: 0 }, "45°", TEAL), ax({ s1: 0, s2: 0, s3: 0.6 }, "circular", PURP)]}
+      {children(P)}
+    </g>
+  );
+}
+
+// ── SCENE 16 : the ball — the delay dial sweeps the disk out of the plane ──
+function FigBallRoom() {
+  const room = Room.usePresenter();
+  const view = room.state.view || { az: -35, el: 22 };
+  const th = room.state.theta ?? 45, de = room.state.delta ?? 0;
+  const bs = beamsOf(room).filter((b) => hasQ(b, 0) && hasQ(b, 45));
+  const demo = Room.stokes(th, de);
+  return (
+    <div>
+      <svg viewBox="0 0 900 520" style={svgStyle}>
+        <Txt x={450} y={34} size={17} fill={INK} bold>three questions, three numbers, one ball — the Bernoulli ball</Txt>
+        <Ball cx={450} cy={270} R={210} view={view}>{(P) => (<>
+          {/* the ring swept by the delay dial at the presenter's θ */}
+          <polyline points={Array.from({ length: 73 }, (_, i) => { const q = P(Room.stokes(th, (i / 72) * 360)); return `${q.x.toFixed(1)},${q.y.toFixed(1)}`; }).join(" ")} fill="none" stroke={PURP} strokeWidth="2" strokeDasharray="6 4" opacity="0.7" />
+          {bs.map((b) => { const st = Room.stokesOf(b.q); const sv = { s1: st.s1, s2: st.s2, s3: st.s3 === null ? 0 : st.s3 }; const q = P(sv);
+            return (<g key={b.slot} opacity={q.depth < 0 ? 0.45 : 1}><circle cx={q.x} cy={q.y} r="8" fill={b.noise > 0.05 ? SOFT : GOLD} stroke={INK} strokeWidth="1.5" /><text x={q.x} y={q.y - 12} textAnchor="middle" fontSize="15">{b.tag}</text></g>); })}
+          {(() => { const q = P(demo); return (<g><line x1={450} y1={270} x2={q.x} y2={q.y} stroke={PURP} strokeWidth="4" /><circle cx={q.x} cy={q.y} r="11" fill={PURP} stroke={INK} strokeWidth="3" /></g>); })()}
+        </>)}</Ball>
+        <Txt x={450} y={505} size={14}>{`demo beam: θ = ${th}°, delay ${de}° → (${demo.s1.toFixed(2)}, ${demo.s2.toFixed(2)}, ${demo.s3.toFixed(2)}) · dots: the room's beams (height from the delay question, 0 if not asked)`}</Txt>
+      </svg>
+      <div style={{ display: "flex", gap: 14, justifyContent: "center", marginTop: 6, alignItems: "center", flexWrap: "wrap" }}>
+        <span style={{ fontFamily: MONO, fontSize: 13, color: SOFT }}>θ</span><input type="range" min="0" max="180" step="1" value={th} onChange={(e) => room.publish({ theta: parseInt(e.target.value) })} style={{ width: 180, accentColor: GOLD }} />
+        <span style={{ fontFamily: MONO, fontSize: 13, color: SOFT }}>delay</span><input type="range" min="0" max="360" step="5" value={de} onChange={(e) => room.publish({ delta: parseInt(e.target.value) })} style={{ width: 180, accentColor: PURP }} />
+        <span style={{ fontFamily: MONO, fontSize: 13, color: SOFT }}>turn</span><input type="range" min="-180" max="180" step="5" value={view.az} onChange={(e) => room.publish({ view: { ...view, az: parseInt(e.target.value) } })} style={{ width: 120, accentColor: INK }} />
+        <span style={{ fontFamily: MONO, fontSize: 13, color: SOFT }}>tilt</span><input type="range" min="-80" max="80" step="5" value={view.el} onChange={(e) => room.publish({ view: { ...view, el: parseInt(e.target.value) } })} style={{ width: 120, accentColor: INK }} />
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════ PART IV — CONCLUSION ═══════════════════════════
+// ── SCENE 17 : one photon at a time — Mach–Zehnder with crowd photons ──
+function FigMZRoom() {
+  const room = Room.usePresenter();
+  const phi = room.state.mzPhi ?? 0, src = room.state.mzSource || "amplitudes", rid = room.state.mzRound ?? 0, armed = !!room.state.armed;
+  const R = room.rounds();
+  const cur = R[rid];
+  const list = Object.keys(R).map((k) => R[k]).sort((a, b) => a.round - b.round);
+  const nPhones = Object.keys(room.state.roster || {}).length;
+  const X0 = 520, X1 = 860, Y0 = 470, Y1 = 330;
+  return (
+    <div>
+      <svg viewBox="0 0 900 520" style={svgStyle}>
+        <Txt x={250} y={34} size={16} fill={INK} bold>{`the interferometer · dial φ = ${phi}° · ${src === "mixture" ? "mystery-mixture source" : "one photon, both routes"}`}</Txt>
+        {/* schematic: source → half-mirror → two routes → half-mirror → D1 / D2 */}
+        <circle cx={60} cy={200} r="18" fill="#FFF4E8" stroke={GOLD} strokeWidth="3" />
+        <line x1={80} y1={200} x2={140} y2={200} stroke={LBLUE} strokeWidth="5" />
+        <line x1={125} y1={215} x2={155} y2={185} stroke={INK} strokeWidth="4" />
+        <path d="M 140 200 L 140 110 L 360 110 L 360 200" fill="none" stroke={src === "mixture" ? LBLUE : GOLD} strokeWidth="5" opacity="0.8" />
+        <path d="M 140 200 L 140 290 L 360 290 L 360 200" fill="none" stroke={src === "mixture" ? LBLUE : TEAL} strokeWidth="5" opacity="0.8" />
+        <rect x={230} y={270} width="60" height="40" rx="6" fill="#EDE7F9" stroke={PURP} strokeWidth="2.5" /><Txt x={260} y={296} size={13} fill={PURP} bold>{`φ`}</Txt>
+        <line x1={345} y1={215} x2={375} y2={185} stroke={INK} strokeWidth="4" />
+        <line x1={360} y1={200} x2={440} y2={200} stroke={LBLUE} strokeWidth="5" /><rect x={440} y={182} width="36" height="36" rx="6" fill="#FFFFFF" stroke={INK} strokeWidth="2.5" /><Txt x={458} y={240} size={13} fill={INK} bold>D1</Txt>
+        <line x1={360} y1={200} x2={360} y2={40} stroke={LBLUE} strokeWidth="5" /><rect x={342} y={20} width="36" height="36" rx="6" fill="#FFFFFF" stroke={INK} strokeWidth="2.5" /><Txt x={400} y={45} size={13} fill={INK} bold>D2</Txt>
+        <Txt x={250} y={340} size={13}>{src === "mixture" ? "each photon definitely takes one route — we just don't know which" : "amplitudes for both routes, added at the second mirror, then squared"}</Txt>
+        {/* this round's clicks */}
+        <Txt x={250} y={380} size={14} fill={INK} bold>{armed ? `round ${rid} · armed · ${cur ? cur.n : 0} of ${nPhones} phones pressed` : `round ${rid} · closed`}</Txt>
+        {cur && cur.clicks.slice(-24).map((c, i) => (<g key={i}><circle cx={40 + (i % 12) * 36} cy={410 + Math.floor(i / 12) * 34} r="11" fill={c.detector === 1 ? GOLD : "#FFFFFF"} stroke={INK} strokeWidth="1.5" /><text x={40 + (i % 12) * 36} y={415 + Math.floor(i / 12) * 34} textAnchor="middle" fontSize="12">{c.tag}</text></g>))}
+        <Txt x={250} y={500} size={13}>{cur ? `D1: ${cur.d1} · D2: ${cur.n - cur.d1} · fraction to D1 = ${(cur.d1 / cur.n).toFixed(2)}` : "gold = D1, white = D2"}</Txt>
+        {/* the fringe from the rounds */}
+        <Txt x={(X0 + X1) / 2} y={300} size={14} fill={INK} bold>fraction to D1, round by round</Txt>
+        <line x1={X0} y1={Y0} x2={X1} y2={Y0} stroke={INK} strokeWidth="2" /><line x1={X0} y1={Y0} x2={X0} y2={Y1} stroke={INK} strokeWidth="2" />
+        <Txt x={X0} y={Y0 + 18} size={11}>0°</Txt><Txt x={(X0 + X1) / 2} y={Y0 + 18} size={11}>180°</Txt><Txt x={X1} y={Y0 + 18} size={11}>360°</Txt><Txt x={X0 - 8} y={Y1 + 4} anchor="end" size={11}>1</Txt><Txt x={X0 - 8} y={Y0 + 4} anchor="end" size={11}>0</Txt>
+        <polyline points={Array.from({ length: 73 }, (_, i) => `${X0 + (i / 72) * (X1 - X0)},${Y0 - Room.mzP1((i / 72) * 360) * (Y0 - Y1)}`).join(" ")} fill="none" stroke={GOLD} strokeWidth="2" strokeDasharray="6 4" opacity="0.6" />
+        <line x1={X0} y1={Y0 - 0.5 * (Y0 - Y1)} x2={X1} y2={Y0 - 0.5 * (Y0 - Y1)} stroke={LBLUE} strokeWidth="2" strokeDasharray="6 4" />
+        {list.map((r) => (<g key={r.round}><circle cx={X0 + (r.phi / 360) * (X1 - X0)} cy={Y0 - (r.d1 / r.n) * (Y0 - Y1)} r={7 + Math.min(6, r.n / 4)} fill={r.source === "mixture" ? SOFT : GOLD} stroke={INK} strokeWidth="2" opacity="0.9" /><Txt x={X0 + (r.phi / 360) * (X1 - X0)} y={Y0 - (r.d1 / r.n) * (Y0 - Y1) - 16} size={11}>{`#${r.round}`}</Txt></g>))}
+        <Txt x={(X0 + X1) / 2} y={505} size={12}>gold dots: both-routes source · grey: mixture · dashed: cos²(φ/2) and ½</Txt>
+      </svg>
+      <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 6, alignItems: "center", flexWrap: "wrap" }}>
+        {[0, 90, 180, 270].map((a) => <Button key={a} ghost={phi !== a} onClick={() => room.publish({ mzPhi: a }, true)}>{`φ = ${a}°`}</Button>)}
+        <Button ghost onClick={() => room.publish({ mzSource: src === "mixture" ? "amplitudes" : "mixture" }, true)}>{src === "mixture" ? "source: mixture → both routes" : "source: both routes → mixture"}</Button>
+        <Button active={armed} onClick={() => armed ? room.publish({ armed: false }, true) : room.publish({ armed: true, mzRound: rid + 1 }, true)}>{armed ? "close the round" : "arm a new round"}</Button>
+      </div>
+    </div>
+  );
+}
+
+// ── SCENE 18 : the receipt (presenter-only text slide; this figure is the ladder) ──
+function FigReceiptRoom() {
+  const rows = [["a coin, one question", "half a disk", "odds + bandwidth"], ["light, every sheet angle", "the disk", "+ a sign"], ["light, plus a delay", "the ball", "+ a third number"], ["ℝ → ℂ", "rebit → qubit", "Bernoulli = Poincaré = Bloch ball"]];
+  const claims = ["№ 1 nature's rule is probabilistic", "№ 2 little quantities: add, then square", "№ 3 qubits live anywhere on the surface", "№ 4 parallelism + interference"];
+  return (
+    <svg viewBox="0 0 900 460" style={svgStyle}>
+      {rows.map((r, i) => (<g key={i}>
+        <rect x={40} y={40 + i * 70} width={820} height={54} rx="10" fill={i === 3 ? PEACH : "#FFFFFF"} stroke={LBLUE} strokeWidth="2" />
+        <Txt x={60} y={74 + i * 70} anchor="start" size={16} fill={INK} bold>{r[0]}</Txt>
+        <Txt x={450} y={74 + i * 70} size={16} fill={GOLD} bold>{r[1]}</Txt>
+        <Txt x={840} y={74 + i * 70} anchor="end" size={14}>{r[2]}</Txt>
+      </g>))}
+      {claims.map((c, i) => (<g key={i}>
+        <circle cx={70} cy={350 + i * 28} r="9" fill={GOLD} stroke={INK} strokeWidth="1.5" />
+        <Txt x={92} y={355 + i * 28} anchor="start" size={14} fill={INK}>{c + " — redeemed"}</Txt>
+      </g>))}
+    </svg>
+  );
+}
+
+// ── SCENE 19 : the room decoheres — each phone adds a random delay; the average shrinks to the axis ──
+function FigDecohereRoom() {
+  const room = Room.usePresenter();
+  const view = room.state.view || { az: -35, el: 22 };
+  const th = room.state.theta ?? 45, de = room.state.delta ?? 0;
+  const ns = room.noises();
+  const pure = Room.stokes(th, de);
+  const pts = ns.map((n) => ({ ...n, sv: Room.stokes(th, de + n.delta) }));
+  const avg = pts.length ? { s1: pts.reduce((a, p) => a + p.sv.s1, 0) / pts.length, s2: pts.reduce((a, p) => a + p.sv.s2, 0) / pts.length, s3: pts.reduce((a, p) => a + p.sv.s3, 0) / pts.length } : null;
+  const len = avg ? Math.hypot(avg.s1, avg.s2, avg.s3) : 0.5;
+  return (
+    <div>
+      <svg viewBox="0 0 900 520" style={svgStyle}>
+        <Txt x={450} y={34} size={17} fill={INK} bold>{`the presenter's pure beam (θ = ${th}°) · ${ns.length} phones have added noise`}</Txt>
+        <Ball cx={450} cy={270} R={210} view={view}>{(P) => (<>
+          {pts.map((p) => { const q = P(p.sv); return <circle key={p.slot} cx={q.x} cy={q.y} r="6" fill={SOFT} opacity={q.depth < 0 ? 0.3 : 0.6} />; })}
+          {(() => { const q = P(pure); return <g opacity="0.5"><line x1={450} y1={270} x2={q.x} y2={q.y} stroke={PURP} strokeWidth="3" strokeDasharray="6 4" /><circle cx={q.x} cy={q.y} r="9" fill="none" stroke={PURP} strokeWidth="2.5" /></g>; })()}
+          {avg && (() => { const q = P(avg); return <g><line x1={450} y1={270} x2={q.x} y2={q.y} stroke={RED} strokeWidth="5" /><circle cx={q.x} cy={q.y} r="12" fill={RED} stroke={INK} strokeWidth="3" /></g>; })()}
+        </>)}</Ball>
+        <Txt x={450} y={505} size={14}>{avg ? `the room's average pointer has length ${(len * 2).toFixed(2)} (pure = 1.00) — it is sinking toward the axis` : "phones: press ‘add my noise’"}</Txt>
+      </svg>
+      <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 6, alignItems: "center" }}>
+        <span style={{ fontFamily: MONO, fontSize: 13, color: SOFT }}>θ</span><input type="range" min="0" max="180" step="1" value={th} onChange={(e) => room.publish({ theta: parseInt(e.target.value) })} style={{ width: 200, accentColor: GOLD }} />
+        <Button ghost onClick={() => room.publish({ noiseReset: (room.state.noiseReset || 0) + 1 }, true)}>clear the noise</Button>
+      </div>
+    </div>
+  );
+}
+
 module.exports = { FigJoin, FigFlipRoom, FigBarsRoom, FigHalfPlaneRoom, FigArcRoom, FigNeedleRoom,
-  FigLensRoom, FigPhotonRoom, FigSurveyRoom, FigMixRoom, FigQuestionRoom, FigProjectRoom, FigThreeLensRoom, FigDoubleRoom, FigTwinsRoom };
+  FigLensRoom, FigPhotonRoom, FigSurveyRoom, FigMixRoom, FigQuestionRoom, FigProjectRoom, FigThreeLensRoom, FigDoubleRoom, FigTwinsRoom,
+  FigShadowRoom, FigImpostorRoom, FigBallRoom, FigMZRoom, FigReceiptRoom, FigDecohereRoom };
