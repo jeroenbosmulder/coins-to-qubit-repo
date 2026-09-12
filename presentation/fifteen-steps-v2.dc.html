@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&amp;family=IBM+Plex+Mono:wght@400;600&amp;display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; background: #0B1B3A; }
+    a { color: #EE7203; } a:hover { color: #00A1E4; }
+  </style>
+  <script src="./present-sync.js"></script>
+</helmet>
+<x-import component-from-global-scope="deck-stage" from="./deck-stage.js" width="1920" height="1080" hint-size="100%,100%" data-uneditable="">
+
+  <section data-label="Title" data-speaker-notes="Welcome. The promise:
+— starting from an ordinary coin and a little lamplight,
+— every participant builds a quantum bit with their own hands today.
+— No physics or statistics background needed; the tutorial explains everything from scratch.
+
+Workshop mechanics (say once):
+— everyone opens the tutorial on their own laptop and drives it themselves;
+— these slides are waypoints, the tutorial is the road;
+— every figure on my screen is draggable — and the same figures live in your tutorial.
+
+My own keys: arrows to navigate, N toggles these notes, P opens the audience mirror window." style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:36px; background:#002157; background-image:repeating-linear-gradient(to right, rgba(255,255,255,0.05) 0 1.5px, transparent 1.5px 48px), repeating-linear-gradient(to bottom, rgba(255,255,255,0.05) 0 1.5px, transparent 1.5px 48px); color:#FFFFFF; font-family:'Fraunces', Georgia, serif; box-sizing:border-box; padding:100px;">
+    <img src="icon-dark.png" alt="Bernoulli arch" style="width:170px; height:170px;">
+    <h1 style="font-size:104px; font-weight:700; margin:0; letter-spacing:-2px; text-align:center;"><span>Build your own qubit</span></h1>
+    <p style="font-family:'IBM Plex Mono', monospace; font-size:30px; color:#AFE0F7; margin:0; text-align:center;"><span>fifteen steps from a coin flip, via light, to a qubit</span></p>
+    <p style="font-family:'IBM Plex Mono', monospace; font-size:24px; color:#EE7203; margin:0; text-align:center;"><span>a hands-on workshop · you drive, the slides guide</span></p>
+  </section>
+
+  <section data-label="How this works" data-speaker-notes="Logistics, two minutes:
+— open the tutorial link now; check everyone sees step 1;
+— rhythm per step: I frame it here (1–2 min), you play in the tutorial (2–5 min), we regroup on the surprise;
+— the figures on my slides sync to the wall screen — when I drag, you see it move.
+
+The one rule of the day:
+— nowhere do we ADD anything quantum;
+— we only refuse to throw details away — and twice, light will force our hand." style="display:flex; flex-direction:column; padding:90px 100px 80px; background:#FFFFFF; color:#002157; font-family:'Fraunces', Georgia, serif; box-sizing:border-box;">
+    <div style="display:flex; flex-direction:column; gap:14px;">
+      <div style="font-family:'IBM Plex Mono', monospace; font-size:24px; letter-spacing:3px; color:#EE7203; font-weight:600;"><span>HOW THIS WORKSHOP WORKS</span></div>
+      <h2 style="font-size:64px; font-weight:600; margin:0; letter-spacing:-1px;"><span>You run the tutorial — the slides mark the waypoints</span></h2>
+    </div>
+    <div style="display:flex; gap:56px; flex:1; align-items:center; margin-top:30px;">
+      <div style="width:470px; display:flex; flex-direction:column; gap:28px; font-size:30px; line-height:1.55;">
+        <p style="margin:0;"><span>Open the tutorial on your own screen — every step there is interactive, and playing with it </span><strong>is</strong><span> the workshop.</span></p>
+        <p style="margin:0;"><span>Per step: a short framing here, a few minutes of hands-on play there, then we regroup on what surprised us.</span></p>
+        <p style="margin:0; color:#5C6E8F;"><span>The creed of the day: we never </span><em>add</em><span> anything quantum. We only keep details — and let light audit the books.</span></p>
+      </div>
+      <div style="flex:1; align-self:stretch; display:flex; flex-direction:column; gap:18px; justify-content:center;">
+        <div style="display:flex; gap:24px; align-items:baseline; padding:20px 28px; border:2px solid #AFE0F7; border-radius:14px;"><span style="font-family:'IBM Plex Mono', monospace; font-size:22px; letter-spacing:2px; color:#EE7203; font-weight:600; flex:none;">ACT I</span><span style="font-size:28px;">A coin, honestly kept</span><span style="margin-left:auto; font-family:'IBM Plex Mono', monospace; font-size:20px; color:#5C6E8F; flex:none;">steps 1–5</span></div>
+        <div style="display:flex; gap:24px; align-items:baseline; padding:20px 28px; border:2px solid #AFE0F7; border-radius:14px;"><span style="font-family:'IBM Plex Mono', monospace; font-size:22px; letter-spacing:2px; color:#EE7203; font-weight:600; flex:none;">ACT II</span><span style="font-size:28px;">Light, nature's second example</span><span style="margin-left:auto; font-family:'IBM Plex Mono', monospace; font-size:20px; color:#5C6E8F; flex:none;">steps 6–8</span></div>
+        <div style="display:flex; gap:24px; align-items:baseline; padding:20px 28px; border:2px solid #AFE0F7; border-radius:14px;"><span style="font-family:'IBM Plex Mono', monospace; font-size:22px; letter-spacing:2px; color:#EE7203; font-weight:600; flex:none;">ACT III</span><span style="font-size:28px;">Questions, signs, amplitudes</span><span style="margin-left:auto; font-family:'IBM Plex Mono', monospace; font-size:20px; color:#5C6E8F; flex:none;">steps 9–11</span></div>
+        <div style="display:flex; gap:24px; align-items:baseline; padding:20px 28px; border:2px solid #AFE0F7; border-radius:14px;"><span style="font-family:'IBM Plex Mono', monospace; font-size:22px; letter-spacing:2px; color:#EE7203; font-weight:600; flex:none;">ACT IV</span><span style="font-size:28px;">Circular light — the ball, already named</span><span style="margin-left:auto; font-family:'IBM Plex Mono', monospace; font-size:20px; color:#5C6E8F; flex:none;">steps 12–13</span></div>
+        <div style="display:flex; gap:24px; align-items:baseline; padding:20px 28px; border:2px solid #AFE0F7; border-radius:14px;"><span style="font-family:'IBM Plex Mono', monospace; font-size:22px; letter-spacing:2px; color:#EE7203; font-weight:600; flex:none;">ACT V</span><span style="font-size:28px;">One photon at a time</span><span style="margin-left:auto; font-family:'IBM Plex Mono', monospace; font-size:20px; color:#5C6E8F; flex:none;">steps 14–15</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section data-label="Film 1" data-speaker-notes="Play the film — sixty seconds, worth every one.
+— Brian Cox, on BBC radio, challenged to state the rules of quantum mechanics inside a minute.
+— Ask the room to listen for two claims: one simple probabilistic rule; and the strange 'little quantities … you add them up'." style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:30px; background:#002157; background-image:repeating-linear-gradient(to right, rgba(255,255,255,0.05) 0 1.5px, transparent 1.5px 48px), repeating-linear-gradient(to bottom, rgba(255,255,255,0.05) 0 1.5px, transparent 1.5px 48px); color:#FFFFFF; font-family:'Fraunces', Georgia, serif; box-sizing:border-box; padding:70px 100px;">
+    <div style="font-family:'IBM Plex Mono', monospace; font-size:24px; letter-spacing:4px; color:#EE7203; font-weight:600;"><span>WATCH FIRST · FILM 1 OF 2</span></div>
+    <h2 style="font-size:60px; font-weight:700; margin:0; letter-spacing:-1px; text-align:center;"><span>Quantum mechanics in sixty seconds</span></h2>
+    <iframe src="https://www.youtube-nocookie.com/embed/fcfQkxwz4Oo" title="Quantum mechanics in sixty seconds" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen="" style="width:1280px; height:680px; max-width:100%; border:2px solid #AFE0F7; border-radius:14px; background:#000000;"></iframe>
+    <p style="font-family:'IBM Plex Mono', monospace; font-size:24px; color:#AFE0F7; margin:0; text-align:center;"><span>Brian Cox, challenged on BBC radio to state the rules inside a minute</span></p>
+  </section>
+
+  <section data-label="Film 2" data-speaker-notes="Play a few minutes — Will Oliver (director, MIT Center for Quantum Engineering) and Jeff Grover.
+— Listen for two more claims: qubits live anywhere on planet Earth's surface, not just the poles; and quantum power = parallelism + interference.
+— Both films are honest — and both ask you to take nearly everything on faith. That's what today fixes." style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:30px; background:#002157; background-image:repeating-linear-gradient(to right, rgba(255,255,255,0.05) 0 1.5px, transparent 1.5px 48px), repeating-linear-gradient(to bottom, rgba(255,255,255,0.05) 0 1.5px, transparent 1.5px 48px); color:#FFFFFF; font-family:'Fraunces', Georgia, serif; box-sizing:border-box; padding:70px 100px;">
+    <div style="font-family:'IBM Plex Mono', monospace; font-size:24px; letter-spacing:4px; color:#EE7203; font-weight:600;"><span>WATCH FIRST · FILM 2 OF 2</span></div>
+    <h2 style="font-size:60px; font-weight:700; margin:0; letter-spacing:-1px; text-align:center;"><span>Quantum explained — MIT</span></h2>
+    <iframe src="https://www.youtube-nocookie.com/embed/jk0jWzlvA5w" title="Quantum explained — MIT" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen="" style="width:1280px; height:680px; max-width:100%; border:2px solid #AFE0F7; border-radius:14px; background:#000000;"></iframe>
+    <p style="font-family:'IBM Plex Mono', monospace; font-size:24px; color:#AFE0F7; margin:0; text-align:center;"><span>Will Oliver &amp; Jeff Grover on what quantum computing is</span></p>
+  </section>
+
+  <section data-label="Four claims" data-speaker-notes="The contract of the workshop — read the four claims out loud, then the promise:
+— № 1 Cox: nature's basic rule is probabilistic — one simple rule, the rest follows;
+— № 2 Cox: beneath the probabilities sit 'little quantities' — computed first, added up, squared only at the end;
+— № 3 MIT: bits are poles, qubits live anywhere on the surface of planet Earth;
+— № 4 MIT: quantum power = parallelism + interference — right answers enhanced, wrong suppressed.
+The promise: nobody here will be asked to BELIEVE any of these. We build all four today, starting from coin flips. Watch the gold badges: each claim gets sighted, caught, and finally redeemed." style="display:flex; flex-direction:column; padding:90px 100px 80px; background:#FFFFFF; color:#002157; font-family:'Fraunces', Georgia, serif; box-sizing:border-box;">
+    <div style="display:flex; flex-direction:column; gap:14px;">
+      <div style="display:flex; justify-content:space-between; align-items:baseline; gap:24px; font-family:'IBM Plex Mono', monospace; font-size:24px; letter-spacing:3px; color:#EE7203; font-weight:600;"><span>WATCH FIRST — FOUR REMARKABLE CLAIMS</span><span style="font-size:19px; letter-spacing:2px; color:#5C6E8F; font-weight:500;">THE WORKSHOP'S PROMISSORY NOTE</span></div>
+      <h2 style="font-size:64px; font-weight:600; margin:0; letter-spacing:-1px;"><span>Four claims, taken on faith — until today</span></h2>
+    </div>
+    <div style="flex:1; display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:24px; margin-top:30px;">
+        <div style="border:2px solid #AFE0F7; border-radius:14px; background:#FFFFFF; padding:24px 28px; display:flex; flex-direction:column; gap:10px;"><span style="font-family:'IBM Plex Mono', monospace; font-size:19px; letter-spacing:1.5px; color:#C25400; font-weight:700;">CLAIM № 1 · COX</span><span style="font-size:25px; line-height:1.5;">Nature's basic rule is <strong>probabilistic</strong>: particles hop from place to place with a probability given by one simple rule — and the rest of quantum mechanics follows.</span><span style="font-family:'IBM Plex Mono', monospace; font-size:17px; color:#5C6E8F; margin-top:auto;">redeemed across steps 1–3 and 9–10</span></div>
+        <div style="border:2px solid #AFE0F7; border-radius:14px; background:#FFFFFF; padding:24px 28px; display:flex; flex-direction:column; gap:10px;"><span style="font-family:'IBM Plex Mono', monospace; font-size:19px; letter-spacing:1.5px; color:#C25400; font-weight:700;">CLAIM № 2 · COX</span><span style="font-size:25px; line-height:1.5;">The rule doesn't work with probabilities directly: beneath each sits a stranger <strong>little quantity</strong> — computed first, added up, turned into odds only at the end.</span><span style="font-family:'IBM Plex Mono', monospace; font-size:17px; color:#5C6E8F; margin-top:auto;">sighted steps 4 &amp; 6 · redeemed steps 11 &amp; 15</span></div>
+        <div style="border:2px solid #AFE0F7; border-radius:14px; background:#FFFFFF; padding:24px 28px; display:flex; flex-direction:column; gap:10px;"><span style="font-family:'IBM Plex Mono', monospace; font-size:19px; letter-spacing:1.5px; color:#C25400; font-weight:700;">CLAIM № 3 · MIT</span><span style="font-size:25px; line-height:1.5;">A transistor's bit is a switch — 0 or 1, north pole or south pole. <strong>Qubits, like humans, can be anywhere on the surface of planet Earth.</strong></span><span style="font-family:'IBM Plex Mono', monospace; font-size:17px; color:#5C6E8F; margin-top:auto;">sighted step 4 · redeemed steps 12–14</span></div>
+        <div style="border:2px solid #AFE0F7; border-radius:14px; background:#FFFFFF; padding:24px 28px; display:flex; flex-direction:column; gap:10px;"><span style="font-family:'IBM Plex Mono', monospace; font-size:19px; letter-spacing:1.5px; color:#C25400; font-weight:700;">CLAIM № 4 · MIT</span><span style="font-size:25px; line-height:1.5;">Quantum power is parallelism plus <strong>interference</strong> — states adding like overlapping waves, right answers enhanced, wrong answers suppressed.</span><span style="font-family:'IBM Plex Mono', monospace; font-size:17px; color:#5C6E8F; margin-top:auto;">sighted steps 6–7 · redeemed steps 14–15</span></div>
+    </div>
+    <p style="font-size:27px; line-height:1.5; margin:26px 0 0;"><span>The promise of the day: </span><strong>you will not be asked to believe any of these.</strong><span> You build all four, with your own hands, starting from nothing but coin flips.</span></p>
+  </section>
+
+  <section data-label="Act I divider" data-speaker-notes="Act one, fully classical:
+— flip, count, bet — and be more careful than usually.
+— Two kinds of not-knowing appear, two scores keep them apart,
+— and the scores draw a shape nobody ordered: a half-disk." style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:32px; background:#002157; background-image:repeating-linear-gradient(to right, rgba(255,255,255,0.05) 0 1.5px, transparent 1.5px 48px), repeating-linear-gradient(to bottom, rgba(255,255,255,0.05) 0 1.5px, transparent 1.5px 48px); color:#FFFFFF; font-family:'Fraunces', Georgia, serif; box-sizing:border-box; padding:100px;">
+    <div style="font-family:'IBM Plex Mono', monospace; font-size:26px; letter-spacing:4px; color:#EE7203; font-weight:600;"><span>ACT I · STEPS 1–5</span></div>
+    <h2 style="font-size:88px; font-weight:700; margin:0; letter-spacing:-1.5px; text-align:center;"><span>A coin, honestly kept</span></h2>
+    <p style="font-family:'IBM Plex Mono', monospace; font-size:28px; color:#AFE0F7; margin:0; text-align:center;"><span>flip · count · bet · and refuse to be sloppy</span></p>
+  </section>
+
+  <section data-label="Step 1" data-speaker-notes="Before anyone flips: collect guesses out loud — what does a fair sequence look like?
+— Most people expect neat alternation; real randomness is clumpier.
+— Flip on the slide; let them flip in the tutorial.
+— Two take-aways: the honest pre-flip statement is a bet p; the running fraction settles — odds are real, measurable things.
+Keep it light; 3 minutes." style="display:flex; flex-direction:column; padding:90px 100px 80px; background:#FFFFFF; color:#002157; font-family:'Fraunces', Georgia, serif; box-sizing:border-box;">
+    <div style="display:flex; flex-direction:column; gap:14px;">
+      <div style="display:flex; justify-content:space-between; align-items:baseline; gap:24px; font-family:'IBM Plex Mono', monospace; font-size:24px; letter-spacing:3px; color:#EE7203; font-weight:600;"><span>STEP 1/15 — FLIP A FAIR COIN</span><span style="font-size:19px; letter-spacing:2px; color:#5C6E8F; font-weight:500;">ACT I · A COIN, HONESTLY KEPT</span></div>
+      <h2 style="font-size:64px; font-weight:600; margin:0; letter-spacing:-1px;"><span>Randomness is clumpier than you think</span></h2>
+    </div>
+    <div style="display:flex; gap:56px; flex:1; align-items:center; margin-top:30px;">
+      <div style="width:470px; display:flex; flex-direction:column; gap:28px; font-size:30px; line-height:1.55;">
+        <p style="margin:0;"><span>Guess first: what does a truly random run of ten flips look like? Write it down, then flip.</span></p>
+        <p style="margin:0;"><span>Before any flip, the honest statement is a </span><strong>bet</strong><span>: heads with probability p, tails with the rest.</span></p>
+        <p style="margin:0; color:#5C6E8F;"><span>Flip long enough and the running fraction settles — the odds are a real, measurable property of the coin.</span></p>
+      </div>
+      <div style="flex:1; align-self:stretch; border:2px solid #AFE0F7; border-radius:14px; background-color:#FFFFFF; background-image:repeating-linear-gradient(to right, #E1F3FC 0 1.5px, transparent 1.5px 42px), repeating-linear-gradient(to bottom, #E1F3FC 0 1.5px, transparent 1.5px 42px); display:flex; align-items:center; justify-content:center; padding:16px;">
+        <x-import component="FigFlip" from="./fifteen-figures.jsx" style="width:100%;" hint-size="100%,560px"></x-import>
+      </div>
+    </div>
+  </section>
+
+  <section data-label="Step 2" data-speaker-notes="The key experience: three coins, all mysterious.
+— The biased one betrays itself quickly.
+— But fair vs. deterministic-unknown: both are honestly ‘50/50’ before data — and completely different animals.
+— One is randomness that stays; the other is a fact you merely have not learned.
+Let them flip and argue; reveal at the end. This distinction drives the whole tutorial." style="display:flex; flex-direction:column; padding:90px 100px 80px; background:#FFFFFF; color:#002157; font-family:'Fraunces', Georgia, serif; box-sizing:border-box;">
+    <div style="display:flex; flex-direction:column; gap:14px;">
+      <div style="display:flex; justify-content:space-between; align-items:baseline; gap:24px; font-family:'IBM Plex Mono', monospace; font-size:24px; letter-spacing:3px; color:#EE7203; font-weight:600;"><span>STEP 2/15 — THREE MYSTERY COINS</span><span style="font-size:19px; letter-spacing:2px; color:#5C6E8F; font-weight:500;">ACT I · A COIN, HONESTLY KEPT</span></div>
+      <h2 style="font-size:64px; font-weight:600; margin:0; letter-spacing:-1px;"><span>Not every fifty-fifty is the same fifty-fifty</span></h2>
+    </div>
+    <div style="display:flex; gap:56px; flex:1; align-items:center; margin-top:30px;">
+      <div style="width:470px; display:flex; flex-direction:column; gap:28px; font-size:30px; line-height:1.55;">
+        <p style="margin:0;"><span>One coin is fair, one is biased, one has </span><em>already made up its mind</em><span> — you just do not know which side.</span></p>
+        <p style="margin:0;"><span>Flipping unmasks the biased coin fast. But the fair coin and the decided coin both start as honest 50/50 bets.</span></p>
+        <p style="margin:0; color:#5C6E8F;"><span>Same number, different </span><strong>kind</strong><span> of not-knowing: randomness that stays vs. a fact not yet learned.</span></p>
+      </div>
+      <div style="flex:1; align-self:stretch; border:2px solid #AFE0F7; border-radius:14px; background-color:#FFFFFF; background-image:repeating-linear-gradient(to right, #E1F3FC 0 1.5px, transparent 1.5px 42px), repeating-linear-gradient(to bottom, #E1F3FC 0 1.5px, transparent 1.5px 42px); display:flex; align-items:center; justify-content:center; padding:16px;">
+        <x-import component="FigMystery" from="./fifteen-figures.jsx" style="width:100%; height:100%;" hint-size="100%,560px"></x-import>
+      </div>
+    </div>
+  </section>
+
+  <section data-label="Step 3" data-speaker-notes="The fix: one number was never enough.
+— Score every run twice: average, and band width (the spread around the average).
+— Bring back ALL THREE coins of step 2: fair (teal), biased (gold), fresh mystery deterministic (red). One button runs 8 experiments of each.
+— Belief = expectation fixed BEFORE flipping — the white-ring cross at the center of each coin's cloud.
+— Fair settles near (½, ½); biased near (0.8, 0.4) — EVERY definite coin earns a seat on one curve, fairness isn't special.
+— The mystery coin's runs land at corners; its belief averages to (½, 0) — strictly INSIDE.
+Park the question: fair and mystery sit at different points — but how far apart are they, really? That non-quantum question drives the whole tutorial." style="display:flex; flex-direction:column; padding:90px 100px 80px; background:#FFFFFF; color:#002157; font-family:'Fraunces', Georgia, serif; box-sizing:border-box;">
+    <div style="display:flex; flex-direction:column; gap:14px;">
+      <div style="display:flex; justify-content:space-between; align-items:baseline; gap:24px; font-family:'IBM Plex Mono', monospace; font-size:24px; letter-spacing:3px; color:#EE7203; font-weight:600;"><span>STEP 3/15 — TWO NUMBERS PER RUN</span><span style="font-size:19px; letter-spacing:2px; color:#5C6E8F; font-weight:500;">ACT I · A COIN, HONESTLY KEPT</span></div>
+      <h2 style="font-size:64px; font-weight:600; margin:0; letter-spacing:-1px;"><span>Score every run twice: odds and band width</span></h2>
+    </div>
+    <div style="display:flex; gap:56px; flex:1; align-items:center; margin-top:30px;">
+      <div style="width:470px; display:flex; flex-direction:column; gap:28px; font-size:30px; line-height:1.55;">
+        <p style="margin:0;"><span>Each run of 30 flips gets two numbers: its </span><strong>average</strong><span> p̂ and its </span><strong>band width</strong><span>. Bring back step 2's three coins and run them all, many times.</span></p>
+        <p style="margin:0;"><span>Your </span><em>belief</em><span> is fixed before flipping: it is the expected pair, not any single run.</span></p>
+        <p style="margin:0; color:#5C6E8F;"><span>Fair and biased both earn seats on one curve — (½, ½) and (0.8, 0.4). The mystery coin's belief averages to (½, 0): strictly </span><strong>inside</strong><span>.</span></p>
+      </div>
+      <div style="flex:1; align-self:stretch; border:2px solid #AFE0F7; border-radius:14px; background-color:#FFFFFF; background-image:repeating-linear-gradient(to right, #E1F3FC 0 1.5px, transparent 1.5px 42px), repeating-linear-gradient(to bottom, #E1F3FC 0 1.5px, transparent 1.5px 42px); display:flex; align-items:center; justify-content:center; padding:16px;">
+        <x-import component="FigScatter" from="./fifteen-figures.jsx" style="width:100%;" hint-size="100%,560px"></x-import>
+      </div>
+    </div>
+  </section>
+
+  <section data-label="Step 4" data-speaker-notes="Now the formula: band width = √(p(1−p)).
+— Rearranged: (p−½)² + σ² = ¼ — a circle equation.
+— Every definite coin lives on a half-circle of radius ½ centered on fair odds.
+Drag the coin along the arc; certainty at the ends, maximal band width on top.
+Name it: the Bernoulli circle. The state space has become a SHAPE.
+Point at the chords: lengths √p and √(1−p), ALWAYS meeting at a right angle (Thales) — square-roots-of-odds enter the story here, innocently.
+The bridge of the whole day: stop thinking of always-H and always-T as opposite — think of them as ORTHOGONAL directions." style="display:flex; flex-direction:column; padding:90px 100px 80px; background:#FFFFFF; color:#002157; font-family:'Fraunces', Georgia, serif; box-sizing:border-box;">
+    <div style="display:flex; flex-direction:column; gap:14px;">
+      <div style="display:flex; justify-content:space-between; align-items:baseline; gap:24px; font-family:'IBM Plex Mono', monospace; font-size:24px; letter-spacing:3px; color:#EE7203; font-weight:600;"><span>STEP 4/15 — THE SEMICIRCLE</span><span style="font-size:19px; letter-spacing:2px; color:#5C6E8F; font-weight:500;">ACT I · A COIN, HONESTLY KEPT</span></div>
+      <h2 style="font-size:64px; font-weight:600; margin:0; letter-spacing:-1px;"><span>Every definite coin lives on a circle</span></h2>
+    </div>
+    <div style="display:flex; gap:56px; flex:1; align-items:center; margin-top:30px;">
+      <div style="width:470px; display:flex; flex-direction:column; gap:28px; font-size:30px; line-height:1.55;">
+        <p style="margin:0;"><span>The band width is not free: σ = √(p(1−p)). Rearranged: (p − ½)² + σ² = ¼ — a </span><strong>circle</strong><span>, radius ½, centered on fair odds.</span></p>
+        <p style="margin:0; color:#5C6E8F;"><span>The chords to the ends, </span><strong>√p</strong><span> and </span><strong>√(1−p)</strong><span>, always meet at a right angle (Thales). Beliefs have acquired geometry.</span></p>
+        <div style="border:2px solid #EE7203; border-radius:10px; background:#FDF1E5; padding:12px 18px; display:flex; flex-direction:column; gap:5px;"><span style="font-family:'IBM Plex Mono', monospace; font-size:17px; letter-spacing:1.5px; color:#C25400; font-weight:700;">CLAIM № 2 &amp; 3 · COX + MIT — FIRST SIGHTING</span><span style="font-size:20px; line-height:1.45;">The needle beneath the odds, and a state space with room off the poles — both just appeared in a coin drawing.</span></div>
+      </div>
+      <div style="flex:1; align-self:stretch; border:2px solid #AFE0F7; border-radius:14px; background-color:#FFFFFF; background-image:repeating-linear-gradient(to right, #E1F3FC 0 1.5px, transparent 1.5px 42px), repeating-linear-gradient(to bottom, #E1F3FC 0 1.5px, transparent 1.5px 42px); display:flex; align-items:center; justify-content:center; padding:16px;">
+        <x-import component="FigArc" from="./fifteen-figures.jsx" style="width:100%;" hint-size="100%,560px"></x-import>
+      </div>
+    </div>
+  </section>
+
+  <section data-label="Step 5" data-speaker-notes="Fill the interior by hand: hold two candidate coins with weights.
+— Both scores average — so the belief slides along the CHORD.
+— All chords together fill the upper half-disk.
+The reading of the picture:
+— rim = statistical uncertainty, irreducible, nothing left to learn;
+— depth into the interior = systematic uncertainty, flips can teach it away.
+The mystery coin from step 2 is the midpoint of the diameter." style="display:flex; flex-direction:column; padding:90px 100px 80px; background:#FFFFFF; color:#002157; font-family:'Fraunces', Georgia, serif; box-sizing:border-box;">
+    <div style="display:flex; flex-direction:column; gap:14px;">
+      <div style="display:flex; justify-content:space-between; align-items:baseline; gap:24px; font-family:'IBM Plex Mono', monospace; font-size:24px; letter-spacing:3px; color:#EE7203; font-weight:600;"><span>STEP 5/15 — MIXING BELIEFS</span><span style="font-size:19px; letter-spacing:2px; color:#5C6E8F; font-weight:500;">ACT I · A COIN, HONESTLY KEPT</span></div>
+      <h2 style="font-size:64px; font-weight:600; margin:0; letter-spacing:-1px;"><span>Blends fill the half-disk — two uncertainties, one picture</span></h2>
+    </div>
+    <div style="display:flex; gap:56px; flex:1; align-items:center; margin-top:30px;">
+      <div style="width:470px; display:flex; flex-direction:column; gap:28px; font-size:30px; line-height:1.55;">
+        <p style="margin:0;"><span>Believe coin q₁ with some weight, q₂ with the rest: both scores average, so your belief slides along the </span><strong>chord</strong><span>.</span></p>
+        <p style="margin:0;"><span>All chords together fill the interior: the upper </span><strong>half-disk</strong><span> is the space of every honest belief.</span></p>
+        <p style="margin:0; color:#5C6E8F;"><span>Rim = randomness that stays. Depth inside = ignorance that flips can cure. The mystery coin sits at the center of the floor.</span></p>
+      </div>
+      <div style="flex:1; align-self:stretch; border:2px solid #AFE0F7; border-radius:14px; background-color:#FFFFFF; background-image:repeating-linear-gradient(to right, #E1F3FC 0 1.5px, transparent 1.5px 42px), repeating-linear-gradient(to bottom, #E1F3FC 0 1.5px, transparent 1.5px 42px); display:flex; align-items:center; justify-content:center; padding:16px;">
+        <x-import component="FigMix" from="./fifteen-figures.jsx" style="width:100%;" hint-size="100%,560px"></x-import>
+      </div>
+    </div>
+  </section>
+
+  <section data-label="Act II divider" data-speaker-notes="Act two — nature's second example, from scratch.
+— First, what polarization even is: a sideways wiggle with two sizes. No physics background assumed; take it slow.
+— Dim the lamp: brightness fractions become per-photon odds — a coin made of light.
+— Partly polarized light turns out to be a mixed belief — our half-disk, rebuilt in glass by nature itself.
+— Then nature overflows the drawing: a beam with no seat. Every extension of the picture, from here on, is forced by what light shows us." style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:32px; background:#002157; background-image:repeating-linear-gradient(to right, rgba(255,255,255,0.05) 0 1.5px, transparent 1.5px 48px), repeating-linear-gradient(to bottom, rgba(255,255,255,0.05) 0 1.5px, transparent 1.5px 48px); color:#FFFFFF; font-family:'Fraunces', Georgia, serif; box-sizing:border-box; padding:100px;">
+    <div style="font-family:'IBM Plex Mono', monospace; font-size:26px; letter-spacing:4px; color:#EE7203; font-weight:600;"><span>ACT II · STEPS 6–8</span></div>
+    <h2 style="font-size:88px; font-weight:700; margin:0; letter-spacing:-1.5px; text-align:center;"><span>Nature's second example: light</span></h2>
+    <p style="font-family:'IBM Plex Mono', monospace; font-size:28px; color:#AFE0F7; margin:0; text-align:center;"><span>what is polarization · partly polarized = a mixed belief · the circle completes</span></p>
+  </section>
+
+  <section data-label="Step 6a" data-speaker-notes="Polarization from scratch — go slow, nobody needs prior physics:
+— light is a wave on a rope: it flies forward and wiggles SIDEWAYS;
+— it can wiggle horizontally, it can wiggle vertically — and in general it does both at once: an H wiggle of size a, a V wiggle of size b, locked by a²+b²=1;
+— that pair (a, b) is all 'polarization' means. Drag β and watch the split repaint.
+— Grab the space panel and TURN it: from the side you see the two wiggles flying; look straight down the axis and the whole wave collapses into the front view.
+— A polarizer sheet keeps only the wiggle along its slots: fraction a² of the brightness passes (Malus 1808).
+— Note the flip switch — same sizes, genuinely different wave. Park it: that innocent switch becomes the hero of Act IV." style="display:flex; flex-direction:column; padding:90px 100px 80px; background:#FFFFFF; color:#002157; font-family:'Fraunces', Georgia, serif; box-sizing:border-box;">
+    <div style="display:flex; flex-direction:column; gap:14px;">
+      <div style="display:flex; justify-content:space-between; align-items:baseline; gap:24px; font-family:'IBM Plex Mono', monospace; font-size:24px; letter-spacing:3px; color:#EE7203; font-weight:600;"><span>STEP 6/15 · I — WHAT IS POLARIZATION?</span><span style="font-size:19px; letter-spacing:2px; color:#5C6E8F; font-weight:500;">ACT II · NATURE'S SECOND EXAMPLE</span></div>
+      <h2 style="font-size:64px; font-weight:600; margin:0; letter-spacing:-1px;"><span>Polarization is a sideways wiggle — two sizes, one lock</span></h2>
+    </div>
+    <div style="display:flex; gap:56px; flex:1; align-items:center; margin-top:30px;">
+      <div style="width:470px; display:flex; flex-direction:column; gap:28px; font-size:30px; line-height:1.55;">
+        <p style="margin:0;"><span>Light is a wave that wiggles </span><strong>sideways</strong><span> as it flies: an H wiggle of size a and a V wiggle of size b, both at once, locked by a² + b² = 1.</span></p>
+        <p style="margin:0;"><span>That pair (a, b) is all </span><em>polarization</em><span> means. A sheet keeps only the wiggle along its slots: fraction </span><strong>a²</strong><span> of the brightness passes (Malus 1808).</span></p>
+        <p style="margin:0; color:#5C6E8F;"><span>Drag β to repaint the split — and note the flip switch. Park it: that innocent switch is the hero of Act IV.</span></p>
+      </div>
+      <div style="flex:1; align-self:stretch; border:2px solid #AFE0F7; border-radius:14px; background-color:#FFFFFF; background-image:repeating-linear-gradient(to right, #E1F3FC 0 1.5px, transparent 1.5px 42px), repeating-linear-gradient(to bottom, #E1F3FC 0 1.5px, transparent 1.5px 42px); display:flex; align-items:center; justify-content:center; padding:16px;">
+        <x-import component="FigWave3D" from="./fifteen-figures.jsx" style="width:100%;" hint-size="100%,700px"></x-import>
+      </div>
+    </div>
+  </section>
+
+  <section data-label="Step 6b" data-speaker-notes="The crown of the light example:
+— Einstein 1905: light arrives in indivisible grains — photons;
+— a grain cannot 30%-pass a sheet: it passes whole or not at all;
+— so the brightness fraction a² must be each photon's CHANCE. Brightness was probability in disguise.
+Let them fire photons until the tally converges on a².
+Land it: a beam, a sheet, a click — step 1's coin, made of light." style="display:flex; flex-direction:column; padding:90px 100px 80px; background:#FFFFFF; color:#002157; font-family:'Fraunces', Georgia, serif; box-sizing:border-box;">
+    <div style="display:flex; flex-direction:column; gap:14px;">
+      <div style="display:flex; justify-content:space-between; align-items:baseline; gap:24px; font-family:'IBM Plex Mono', monospace; font-size:24px; letter-spacing:3px; color:#EE7203; font-weight:600;"><span>STEP 6/15 · II — A COIN MADE OF LIGHT</span><span style="font-size:19px; letter-spacing:2px; color:#5C6E8F; font-weight:500;">ACT II · NATURE'S SECOND EXAMPLE</span></div>
+      <h2 style="font-size:64px; font-weight:600; margin:0; letter-spacing:-1px;"><span>Dim the lamp: brightness becomes chance</span></h2>
+    </div>
+    <div style="display:flex; gap:56px; flex:1; align-items:center; margin-top:30px;">
+      <div style="width:470px; display:flex; flex-direction:column; gap:28px; font-size:30px; line-height:1.55;">
+        <p style="margin:0;"><span>Light arrives in indivisible grains — photons. A grain cannot 30%-pass a sheet: it passes </span><em>whole or not at all</em><span>.</span></p>
+        <p style="margin:0;"><span>So the brightness fraction a² must be each photon's </span><strong>chance</strong><span>. Brightness was probability in disguise.</span></p>
+        <p style="margin:0; color:#5C6E8F;"><span>A beam, a sheet, a click: step 1's coin, made of light. The wave is square-roots-of-odds, flying through the room.</span></p>
+        <div style="border:2px solid #EE7203; border-radius:10px; background:#FDF1E5; padding:12px 18px; display:flex; flex-direction:column; gap:5px;"><span style="font-family:'IBM Plex Mono', monospace; font-size:17px; letter-spacing:1.5px; color:#C25400; font-weight:700;">CLAIM № 2 · COX — CAUGHT IN THE WILD</span><span style="font-size:20px; line-height:1.45;">Cox's little quantities, found flying through the room: the beam <em>is</em> a sum of (a, b) — squared only at the detector.</span></div>
+      </div>
+      <div style="flex:1; align-self:stretch; border:2px solid #AFE0F7; border-radius:14px; background-color:#FFFFFF; background-image:repeating-linear-gradient(to right, #E1F3FC 0 1.5px, transparent 1.5px 42px), repeating-linear-gradient(to bottom, #E1F3FC 0 1.5px, transparent 1.5px 42px); display:flex; align-items:center; justify-content:center; padding:16px;">
+        <x-import component="FigPhoton" from="./fifteen-figures.jsx" style="width:100%;" hint-size="100%,460px"></x-import>
+      </div>
+    </div>
+  </section>
+
+  <section data-label="Step 6c" data-speaker-notes="THE aha of act two — one fixed question, many beams:
+— keep the sheet horizontal, never turn it; the only thing that varies is the beam's tilt β;
+— every run: 30 photons, score the run like a coin — average p̂ and band width;
+— survey tilts from 0° to 90°: the points land, one by one, ON THE COIN'S SEMICIRCLE.
+Nature just redrew, in glass, the drawing we made from coin flips. Pause here — this is where people start wondering about step 4's needle.
+Then hand them the bridge: never-passes and always-passes sit at the ends, exactly like always-T and always-H." style="display:flex; flex-direction:column; padding:90px 100px 80px; background:#FFFFFF; color:#002157; font-family:'Fraunces', Georgia, serif; box-sizing:border-box;">
+    <div style="display:flex; flex-direction:column; gap:14px;">
+      <div style="display:flex; justify-content:space-between; align-items:baseline; gap:24px; font-family:'IBM Plex Mono', monospace; font-size:24px; letter-spacing:3px; color:#EE7203; font-weight:600;"><span>STEP 6/15 · III — MANY BEAMS, ONE QUESTION</span><span style="font-size:19px; letter-spacing:2px; color:#5C6E8F; font-weight:500;">ACT II · NATURE'S SECOND EXAMPLE</span></div>
+      <h2 style="font-size:64px; font-weight:600; margin:0; letter-spacing:-1px;"><span>Lamplight redraws the coin's semicircle</span></h2>
+    </div>
+    <div style="display:flex; gap:56px; flex:1; align-items:center; margin-top:30px;">
+      <div style="width:470px; display:flex; flex-direction:column; gap:28px; font-size:30px; line-height:1.55;">
+        <p style="margin:0;"><span>Keep the sheet fixed — one question, never turned. Send beams of </span><em>every tilt</em><span> through it, 30 photons per run, and score each run like a coin: average and band width.</span></p>
+        <p style="margin:0;"><span>The points land on </span><strong>the coin's semicircle</strong><span> — never-passes and always-passes at the ends, the 45° beam on top.</span></p>
+        <p style="margin:0; color:#5C6E8F;"><span>Nature just redrew our drawing, in glass. Time to wonder about step 4's little needle…</span></p>
+      </div>
+      <div style="flex:1; align-self:stretch; border:2px solid #AFE0F7; border-radius:14px; background-color:#FFFFFF; background-image:repeating-linear-gradient(to right, #E1F3FC 0 1.5px, transparent 1.5px 42px), repeating-linear-gradient(to bottom, #E1F3FC 0 1.5px, transparent 1.5px 42px); display:flex; align-items:center; justify-content:center; padding:16px;">
+        <x-import component="FigSurvey" from="./fifteen-figures.jsx" style="width:100%;" hint-size="100%,620px"></x-import>
+      </div>
+    </div>
+  </section>
+
+  <section data-label="Step 7a" data-speaker-notes="The semicircle is already on the table from the survey — now fill it in.
+Two sheets rebuild the whole drawing: prepare β, ask θ, odds cos²(θ−β).
+— Drag the beam around the rim: fully polarized beams are the pure states (lab angles count double — parked for step 11).
+— Drag it INWARD: partly polarized light. Ask the room: is this really a mixed belief? Yes — it behaves exactly like a blend of pure beams, and no sheet can tell the difference.
+— The bulb — unpolarized light — is the center: flat 50% to every question.
+— Degree of polarization = your confidence score, in glass. Stokes, 1852.
+— Then the seed for act III: once the same drawing appears twice, people start wondering about step 4's needle — and here it is: the pair (a, b), not bookkeeping anymore but physically flying through the room as two wiggles." style="display:flex; flex-direction:column; padding:90px 100px 80px; background:#FFFFFF; color:#002157; font-family:'Fraunces', Georgia, serif; box-sizing:border-box;">
+    <div style="display:flex; flex-direction:column; gap:14px;">
+      <div style="display:flex; justify-content:space-between; align-items:baseline; gap:24px; font-family:'IBM Plex Mono', monospace; font-size:24px; letter-spacing:3px; color:#EE7203; font-weight:600;"><span>STEP 7/15 · I — THE SAME DISK, IN GLASS</span><span style="font-size:19px; letter-spacing:2px; color:#5C6E8F; font-weight:500;">ACT II · NATURE'S SECOND EXAMPLE</span></div>
+      <h2 style="font-size:64px; font-weight:600; margin:0; letter-spacing:-1px;"><span>Partly polarized light is a mixed belief</span></h2>
+    </div>
+    <div style="display:flex; gap:56px; flex:1; align-items:center; margin-top:30px;">
+      <div style="width:470px; display:flex; flex-direction:column; gap:22px; font-size:30px; line-height:1.55;">
+        <p style="margin:0;"><span>Now turn the sheet too: prepare at β, ask at θ, odds cos²(θ−β). Fully polarized beams walk the rim of the disk — </span><strong>pure states, in glass</strong><span>.</span></p>
+        <p style="margin:0;"><span>Drag inward: </span><em>partly polarized</em><span> light — exactly a blend of pure beams, a </span><strong>mixed belief</strong><span>; the unpolarized bulb </span><em>is</em><span> the center.</span></p>
+        <p style="margin:0; color:#5C6E8F;"><span>Degree of polarization (Stokes 1852) = step 5's confidence score. And step 4's needle? The pair (a, b) — </span><strong>flying through the room</strong><span>.</span></p>
+      </div>
+      <div style="flex:1; align-self:stretch; border:2px solid #AFE0F7; border-radius:14px; background-color:#FFFFFF; background-image:repeating-linear-gradient(to right, #E1F3FC 0 1.5px, transparent 1.5px 42px), repeating-linear-gradient(to bottom, #E1F3FC 0 1.5px, transparent 1.5px 42px); display:flex; align-items:center; justify-content:center; padding:16px;">
+        <x-import component="FigDisk" from="./fifteen-figures.jsx" style="width:min(100%, 1170px);" hint-size="100%,560px"></x-import>
+      </div>
+    </div>
+  </section>
+
+  <section data-label="Step 7b" data-speaker-notes="The cliffhanger — leave the tension standing:
+— drag past the axis: the 135° beam. A perfectly honest, fully polarized beam;
+— behind a plain H/V flip it matches the fair coin exactly — 50/50;
+— yet behind a 45° sheet it goes DARK, where the 45° beam sails through. Measurably different states;
+— our half-disk has exactly one seat for those odds on the rim — already taken.
+Nature is showing us a state the drawing cannot seat. We must have thrown a detail away." style="display:flex; flex-direction:column; padding:90px 100px 80px; background:#FFFFFF; color:#002157; font-family:'Fraunces', Georgia, serif; box-sizing:border-box;">
+    <div style="display:flex; flex-direction:column; gap:14px;">
+      <div style="display:flex; justify-content:space-between; align-items:baseline; gap:24px; font-family:'IBM Plex Mono', monospace; font-size:24px; letter-spacing:3px; color:#EE7203; font-weight:600;"><span>STEP 7/15 · II — THE SAME DISK, IN GLASS</span><span style="font-size:19px; letter-spacing:2px; color:#5C6E8F; font-weight:500;">ACT II · NATURE'S SECOND EXAMPLE</span></div>
+      <h2 style="font-size:64px; font-weight:600; margin:0; letter-spacing:-1px;"><span>Nature shows a state our drawing cannot seat</span></h2>
+    </div>
+    <div style="display:flex; gap:56px; flex:1; align-items:center; margin-top:30px;">
+      <div style="width:470px; display:flex; flex-direction:column; gap:28px; font-size:30px; line-height:1.55;">
+        <p style="margin:0;"><span>Drag past the axis: the 135° beam — a perfectly honest, fully polarized beam that matches the fair coin's flip odds exactly.</span></p>
+        <p style="margin:0;"><span>Yet behind a 45° sheet it goes </span><strong>dark</strong><span>, where the 45° beam sails through. Two states, same odds — measurably different.</span></p>
+        <p style="margin:0; color:#5C6E8F;"><span>Our half-disk has one seat for fifty-fifty on the rim — already taken. We must have thrown a detail away.</span></p>
+      </div>
+      <div style="flex:1; align-self:stretch; border:2px solid #AFE0F7; border-radius:14px; background-color:#FFFFFF; background-image:repeating-linear-gradient(to right, #E1F3FC 0 1.5px, transparent 1.5px 42px), repeating-linear-gradient(to bottom, #E1F3FC 0 1.5px, transparent 1.5px 42px); display:flex; align-items:center; justify-content:center; padding:16px;">
+        <x-import component="FigDisk" from="./fifteen-figures.jsx" style="width:min(100%, 1170px);" hint-size="100%,560px"></x-import>
+      </div>
+    </div>
+  </section>
+
+  <section data-label="Step 8" data-speaker-notes="What did we throw away? Attach each state its triangle over the diameter.
+— The lower point has the SAME side lengths, opposite ORIENTATION — one turns left, one turns right.
+— Our bookkeeping kept lengths and dropped the turning: the sign.
+— The lower twin of the fair coin is the anti-coin — and you met it in glass: the 135° beam.
+Full circle now; light forced it, geometry named it." style="display:flex; flex-direction:column; padding:90px 100px 80px; background:#FFFFFF; color:#002157; font-family:'Fraunces', Georgia, serif; box-sizing:border-box;">
+    <div style="display:flex; flex-direction:column; gap:14px;">
+      <div style="display:flex; justify-content:space-between; align-items:baseline; gap:24px; font-family:'IBM Plex Mono', monospace; font-size:24px; letter-spacing:3px; color:#EE7203; font-weight:600;"><span>STEP 8/15 — THE MIRROR TWINS</span><span style="font-size:19px; letter-spacing:2px; color:#5C6E8F; font-weight:500;">ACT II · NATURE'S SECOND EXAMPLE</span></div>
+      <h2 style="font-size:64px; font-weight:600; margin:0; letter-spacing:-1px;"><span>Orientation was the lost detail — the circle completes</span></h2>
+    </div>
+    <div style="display:flex; gap:56px; flex:1; align-items:center; margin-top:30px;">
+      <div style="width:470px; display:flex; flex-direction:column; gap:28px; font-size:30px; line-height:1.55;">
+        <p style="margin:0;"><span>Every state carries a triangle over the T–H diameter. Its mirror twin below has identical side lengths — and </span><strong>opposite turning</strong><span>.</span></p>
+        <p style="margin:0;"><span>Our scores kept lengths and dropped orientation: a </span><em>sign</em><span>. Keeping it completes the half-circle to the full </span><strong>Bernoulli circle</strong><span>.</span></p>
+        <p style="margin:0; color:#5C6E8F;"><span>The fair coin's lower twin is the </span><em>anti-coin</em><span> — the 135° beam, named in coin language. Coins alone never showed the lower half: </span><strong>linear light hands us the full circle</strong><span>.</span></p>
+      </div>
+      <div style="flex:1; align-self:stretch; border:2px solid #AFE0F7; border-radius:14px; background-color:#FFFFFF; background-image:repeating-linear-gradient(to right, #E1F3FC 0 1.5px, transparent 1.5px 42px), repeating-linear-gradient(to bottom, #E1F3FC 0 1.5px, transparent 1.5px 42px); display:flex; align-items:center; justify-content:center; padding:16px;">
+        <x-import component="FigTwin" from="./fifteen-figures.jsx" style="width:min(100%, 1080px);" hint-size="100%,560px"></x-import>
+      </div>
+    </div>
+  </section>
+
+  <section data-label="Act III divider" data-speaker-notes="Act three — under the hood.
+— What is a measurement? Any diameter, asking ‘which end?’.
+— Why is the plain flip blind to the sign — and the tilted sheet not?
+— And where do the square-root chords live? Thales answers, and the amplitudes turn out to be the light itself." style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:32px; background:#002157; background-image:repeating-linear-gradient(to right, rgba(255,255,255,0.05) 0 1.5px, transparent 1.5px 48px), repeating-linear-gradient(to bottom, rgba(255,255,255,0.05) 0 1.5px, transparent 1.5px 48px); color:#FFFFFF; font-family:'Fraunces', Georgia, serif; box-sizing:border-box; padding:100px;">
+    <div style="font-family:'IBM Plex Mono', monospace; font-size:26px; letter-spacing:4px; color:#EE7203; font-weight:600;"><span>ACT III · STEPS 9–11</span></div>
+    <h2 style="font-size:88px; font-weight:700; margin:0; letter-spacing:-1.5px; text-align:center;"><span>Questions, signs, amplitudes</span></h2>
+    <p style="font-family:'IBM Plex Mono', monospace; font-size:28px; color:#AFE0F7; margin:0; text-align:center;"><span>every diameter asks · the flip is symmetric · Thales pays out</span></p>
+  </section>
+
+  <section data-label="Step 9" data-speaker-notes="The rule of the game: never ‘where are you?’ — only pick a diameter and ask ‘which end?’.
+— The odds are already drawn: squared distance to the OPPOSITE end.
+— Thales + Pythagoras: the two squared chords sum to 1 automatically.
+— Horizontal diameter = the coin flip; tilted diameters = combined questions — and a polarizer at θ IS one (angles doubled).
+Drag both the state and the question." style="display:flex; flex-direction:column; padding:90px 100px 80px; background:#FFFFFF; color:#002157; font-family:'Fraunces', Georgia, serif; box-sizing:border-box;">
+    <div style="display:flex; flex-direction:column; gap:14px;">
+      <div style="display:flex; justify-content:space-between; align-items:baseline; gap:24px; font-family:'IBM Plex Mono', monospace; font-size:24px; letter-spacing:3px; color:#EE7203; font-weight:600;"><span>STEP 9/15 — MEASURING IS ASKING</span><span style="font-size:19px; letter-spacing:2px; color:#5C6E8F; font-weight:500;">ACT III · QUESTIONS, SIGNS, AMPLITUDES</span></div>
+      <h2 style="font-size:64px; font-weight:600; margin:0; letter-spacing:-1px;"><span>Every diameter is a question: ‘which end?’</span></h2>
+    </div>
+    <div style="display:flex; gap:56px; flex:1; align-items:center; margin-top:30px;">
+      <div style="width:470px; display:flex; flex-direction:column; gap:28px; font-size:30px; line-height:1.55;">
+        <p style="margin:0;"><span>You may never ask a state </span><em>where are you?</em><span> — only pick a diameter and ask </span><strong>which end?</strong></p>
+        <p style="margin:0;"><span>The answer odds are drawn in the picture: the </span><strong>squared chord</strong><span> to the opposite end. Thales + Pythagoras make them sum to 1.</span></p>
+        <p style="margin:0; color:#5C6E8F;"><span>The horizontal diameter is the coin flip. Tilted diameters are new questions — and a rotated polarizer sheet </span><em>is</em><span> one, in glass.</span></p>
+      </div>
+      <div style="flex:1; align-self:stretch; border:2px solid #AFE0F7; border-radius:14px; background-color:#FFFFFF; background-image:repeating-linear-gradient(to right, #E1F3FC 0 1.5px, transparent 1.5px 42px), repeating-linear-gradient(to bottom, #E1F3FC 0 1.5px, transparent 1.5px 42px); display:flex; align-items:center; justify-content:center; padding:16px;">
+        <x-import component="FigAsk" from="./fifteen-figures.jsx" style="width:min(100%, 1080px);" hint-size="100%,560px"></x-import>
+      </div>
+    </div>
+  </section>
+
+  <section data-label="Step 10" data-speaker-notes="Why flips never show the sign:
+— the horizontal diameter's endpoints lie ON the mirror line — the mirror does not move them;
+— so P and P′ keep identical distances to both ends: identical flip odds, forever.
+— Tilt the diameter and the twins split — exactly the 45°-sheet test.
+The flip is not weak; it is symmetric under precisely the reflection the sign encodes. The disk world — polarizers only — is complete and self-consistent." style="display:flex; flex-direction:column; padding:90px 100px 80px; background:#FFFFFF; color:#002157; font-family:'Fraunces', Georgia, serif; box-sizing:border-box;">
+    <div style="display:flex; flex-direction:column; gap:14px;">
+      <div style="display:flex; justify-content:space-between; align-items:baseline; gap:24px; font-family:'IBM Plex Mono', monospace; font-size:24px; letter-spacing:3px; color:#EE7203; font-weight:600;"><span>STEP 10/15 — WHY THE SIGN HIDES</span><span style="font-size:19px; letter-spacing:2px; color:#5C6E8F; font-weight:500;">ACT III · QUESTIONS, SIGNS, AMPLITUDES</span></div>
+      <h2 style="font-size:64px; font-weight:600; margin:0; letter-spacing:-1px;"><span>The flip is blind by symmetry — the tilt is not</span></h2>
+    </div>
+    <div style="display:flex; gap:56px; flex:1; align-items:center; margin-top:30px;">
+      <div style="width:470px; display:flex; flex-direction:column; gap:28px; font-size:30px; line-height:1.55;">
+        <p style="margin:0;"><span>The flip's two endpoints sit </span><em>on</em><span> the mirror line, so a state and its twin keep identical flip odds — forever.</span></p>
+        <p style="margin:0;"><span>Drag the diameter: flat → the twins answer alike; tilted → they split. The 45°-sheet test of step 7, as pure geometry.</span></p>
+        <p style="margin:0; color:#5C6E8F;"><span>Classical probability is what owning only the flat question feels like. A rotating sheet is owning </span><strong>all</strong><span> of them.</span></p>
+      </div>
+      <div style="flex:1; align-self:stretch; border:2px solid #AFE0F7; border-radius:14px; background-color:#FFFFFF; background-image:repeating-linear-gradient(to right, #E1F3FC 0 1.5px, transparent 1.5px 42px), repeating-linear-gradient(to bottom, #E1F3FC 0 1.5px, transparent 1.5px 42px); display:flex; align-items:center; justify-content:center; padding:16px;">
+        <x-import component="FigSign" from="./fifteen-figures.jsx" style="width:min(100%, 1080px);" hint-size="100%,560px"></x-import>
+      </div>
+    </div>
+  </section>
+
+  <section data-label="Step 11" data-speaker-notes="The payoff slide — take time here.
+— Thales: from any state, the chords to T and H have lengths √p and √(1−p) — squares are the odds. The Born rule is triangle geometry.
+— The chord pair lives on a UNIT circle of amplitudes (a,b); the quadratic map sends α to 2α — the lab's angle-doubling, derived.
+— One full lap: (a,b) → (−a,−b), same state — the double cover; only relative signs are physical.
+— And for light the pair is not bookkeeping: a = cosα, b = sinα ARE the two wiggles. The amplitudes are the light." style="display:flex; flex-direction:column; padding:90px 100px 80px; background:#FFFFFF; color:#002157; font-family:'Fraunces', Georgia, serif; box-sizing:border-box;">
+    <div style="display:flex; flex-direction:column; gap:14px;">
+      <div style="display:flex; justify-content:space-between; align-items:baseline; gap:24px; font-family:'IBM Plex Mono', monospace; font-size:24px; letter-spacing:3px; color:#EE7203; font-weight:600;"><span>STEP 11/15 — THE VIEW FROM THE STATE</span><span style="font-size:19px; letter-spacing:2px; color:#5C6E8F; font-weight:500;">ACT III · QUESTIONS, SIGNS, AMPLITUDES</span></div>
+      <h2 style="font-size:64px; font-weight:600; margin:0; letter-spacing:-1px;"><span>The amplitudes were the light all along</span></h2>
+    </div>
+    <div style="display:flex; gap:56px; flex:1; align-items:center; margin-top:30px;">
+      <div style="width:470px; display:flex; flex-direction:column; gap:28px; font-size:30px; line-height:1.55;">
+        <p style="margin:0;"><span>Thales hands every state two chords, √p and √(1−p): squared, they are the answer odds. </span><strong>Born's rule is triangle geometry.</strong></p>
+        <p style="margin:0;"><span>The chord pair (a, b) lives on a unit circle; squaring sends α → 2α — the lab's angle-doubling, derived — and one full lap flips (a, b) to (−a, −b): the same state.</span></p>
+        <p style="margin:0; color:#5C6E8F;"><span>For light this pair is hardware: the H and V </span><em>wiggles</em><span>. Malus 1808 = the squared-chord rule, measured with a crystal and a sunset.</span></p>
+        <div style="border:2px solid #EE7203; border-radius:10px; background:#FDF1E5; padding:12px 18px; display:flex; flex-direction:column; gap:5px;"><span style="font-family:'IBM Plex Mono', monospace; font-size:17px; letter-spacing:1.5px; color:#C25400; font-weight:700;">CLAIM № 2 · COX — REDEEMED</span><span style="font-size:20px; line-height:1.45;">The little quantities have their official name — <strong>amplitudes</strong> — computed first, added, squared last.</span></div>
+      </div>
+      <div style="flex:1; align-self:stretch; border:2px solid #AFE0F7; border-radius:14px; background-color:#FFFFFF; background-image:repeating-linear-gradient(to right, #E1F3FC 0 1.5px, transparent 1.5px 42px), repeating-linear-gradient(to bottom, #E1F3FC 0 1.5px, transparent 1.5px 42px); display:flex; align-items:center; justify-content:center; padding:16px;">
+        <x-import component="FigEmbed" from="./fifteen-figures.jsx" style="width:min(100%, 1080px);" hint-size="100%,560px"></x-import>
+      </div>
+    </div>
+  </section>
+
+  <section data-label="Act IV divider" data-speaker-notes="Act four — the second overflow.
+— A beam that reads flat at EVERY sheet angle — yet a passive crystal plate revives it to purity.
+— A pure state at the center's coordinates: impossible on any disk.
+— The missing detail is a DELAY — and a delay is not a switch but a dial. Disk to ball." style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:32px; background:#002157; background-image:repeating-linear-gradient(to right, rgba(255,255,255,0.05) 0 1.5px, transparent 1.5px 48px), repeating-linear-gradient(to bottom, rgba(255,255,255,0.05) 0 1.5px, transparent 1.5px 48px); color:#FFFFFF; font-family:'Fraunces', Georgia, serif; box-sizing:border-box; padding:100px;">
+    <div style="font-family:'IBM Plex Mono', monospace; font-size:26px; letter-spacing:4px; color:#EE7203; font-weight:600;"><span>ACT IV · STEPS 12–13</span></div>
+    <h2 style="font-size:88px; font-weight:700; margin:0; letter-spacing:-1.5px; text-align:center;"><span>Circular light — the ball, already named</span></h2>
+    <p style="font-family:'IBM Plex Mono', monospace; font-size:28px; color:#AFE0F7; margin:0; text-align:center;"><span>circular light · the delay dial · Poincaré 1892</span></p>
+  </section>
+
+  <section data-label="Step 12" data-speaker-notes="Unlock the flip switch into a free timing dial δ (top figure).
+— δ=0: tilted line. δ=180°: the twin's line — the sign was a delay all along. δ=90° at β=45°: a CIRCLE — the beam corkscrews.
+Bottom figure, the detective's verdict:
+— at exactly the circle, the sheet-reading curve goes FLAT — indistinguishable from the bulb;
+— yet a lossless plate converts it back to a pure diagonal beam. A blend cannot be un-blended: this was never a blend.
+A pure state with no seat anywhere on the disk. The disk is a slice." style="display:flex; flex-direction:column; padding:90px 100px 80px; background:#FFFFFF; color:#002157; font-family:'Fraunces', Georgia, serif; box-sizing:border-box;">
+    <div style="display:flex; flex-direction:column; gap:14px;">
+      <div style="display:flex; justify-content:space-between; align-items:baseline; gap:24px; font-family:'IBM Plex Mono', monospace; font-size:24px; letter-spacing:3px; color:#EE7203; font-weight:600;"><span>STEP 12/15 — THE STATE THAT ISN'T THERE</span><span style="font-size:19px; letter-spacing:2px; color:#5C6E8F; font-weight:500;">ACT IV · CIRCULAR LIGHT — DISK TO BALL</span></div>
+      <h2 style="font-size:64px; font-weight:600; margin:0; letter-spacing:-1px;"><span>A pure state the whole disk cannot seat</span></h2>
+    </div>
+    <div style="display:flex; gap:56px; flex:1; align-items:center; margin-top:30px;">
+      <div style="width:470px; display:flex; flex-direction:column; gap:28px; font-size:30px; line-height:1.55;">
+        <p style="margin:0;"><span>Unlock step 6's switch into a </span><strong>timing dial</strong><span> δ: 0° a line, 180° the twin's line, 90° at equal wiggles — a </span><em>circle</em><span>. The beam corkscrews.</span></p>
+        <p style="margin:0;"><span>Watch the meter curve: at the circle it goes </span><strong>flat</strong><span> — every sheet reads 50%, ‘dead center, same as the bulb’.</span></p>
+        <p style="margin:0; color:#5C6E8F;"><span>Yet a passive quarter-wave plate revives it, losslessly, to a pure beam. Blends cannot be un-blended — so this pure state has </span><strong>no seat on the disk</strong><span>.</span></p>
+      </div>
+      <div style="flex:1; align-self:stretch; border:2px solid #AFE0F7; border-radius:14px; background-color:#FFFFFF; background-image:repeating-linear-gradient(to right, #E1F3FC 0 1.5px, transparent 1.5px 42px), repeating-linear-gradient(to bottom, #E1F3FC 0 1.5px, transparent 1.5px 42px); display:flex; align-items:center; justify-content:center; padding:16px;">
+        <x-import component="FigWaveDelay" from="./fifteen-figures.jsx" style="width:min(100%, 1070px);" hint-size="100%,700px"></x-import>
+      </div>
+    </div>
+  </section>
+
+  <section data-label="Step 13" data-speaker-notes="The canonical fix: the sign ripens into the delay dial φ.
+— Stand a wheel on every diameter: φ=0 the state, φ=180° its twin, φ=±90° the circular beams in between.
+— The circle inflates into a SPHERE; blends fill the ball; ignorance at the center.
+— Poincaré drew this ball for light in 1892; Bloch redrew it for qubits in 1946. Same ball.
+Everything survives: odds are still squared distances; and new: certainty on one diameter forces 50/50 on perpendicular ones — uncertainty, as roundness." style="display:flex; flex-direction:column; padding:90px 100px 80px; background:#FFFFFF; color:#002157; font-family:'Fraunces', Georgia, serif; box-sizing:border-box;">
+    <div style="display:flex; flex-direction:column; gap:14px;">
+      <div style="display:flex; justify-content:space-between; align-items:baseline; gap:24px; font-family:'IBM Plex Mono', monospace; font-size:24px; letter-spacing:3px; color:#EE7203; font-weight:600;"><span>STEP 13/15 — THE DELAY DIAL: DISK TO BALL</span><span style="font-size:19px; letter-spacing:2px; color:#5C6E8F; font-weight:500;">ACT IV · CIRCULAR LIGHT — DISK TO BALL</span></div>
+      <h2 style="font-size:64px; font-weight:600; margin:0; letter-spacing:-1px;"><span>The switch ripens into a dial — and the disk into a ball</span></h2>
+    </div>
+    <div style="display:flex; gap:56px; flex:1; align-items:center; margin-top:30px;">
+      <div style="width:470px; display:flex; flex-direction:column; gap:22px; font-size:30px; line-height:1.55;">
+        <p style="margin:0;"><span>On every diameter, stand a wheel: φ = 0 is the state, 180° its twin, and ±90° the corkscrew beams the disk had no seat for.</span></p>
+        <p style="margin:0;"><span>The circle inflates into a </span><strong>sphere</strong><span>; blends fill the ball; ignorance sits at the center. And it already had a name: </span><strong>Poincaré 1892</strong><span>, Bloch 1946.</span></p>
+        <p style="margin:0; color:#5C6E8F;"><span>Certainty on one diameter forces 50/50 on every perpendicular one: </span><strong>uncertainty is the roundness of the ball.</strong></p>
+        <div style="border:2px solid #EE7203; border-radius:10px; background:#FDF1E5; padding:12px 18px; display:flex; flex-direction:column; gap:5px;"><span style="font-family:'IBM Plex Mono', monospace; font-size:17px; letter-spacing:1.5px; color:#C25400; font-weight:700;">CLAIM № 3 · MIT — REDEEMED</span><span style="font-size:20px; line-height:1.45;">Oliver's planet Earth, on screen: poles = certain states; off the poles, superposition.</span></div>
+      </div>
+      <div style="flex:1; align-self:stretch; border:2px solid #AFE0F7; border-radius:14px; background-color:#FFFFFF; background-image:repeating-linear-gradient(to right, #E1F3FC 0 1.5px, transparent 1.5px 42px), repeating-linear-gradient(to bottom, #E1F3FC 0 1.5px, transparent 1.5px 42px); display:flex; align-items:center; justify-content:center; padding:16px;">
+        <x-import component="FigBloch" from="./fifteen-figures.jsx" style="width:min(100%, 1040px);" hint-size="100%,560px"></x-import>
+      </div>
+    </div>
+  </section>
+
+  <section data-label="Act V divider" data-speaker-notes="Act five — the quantum finale.
+— First, a demonstration the sign owes us: light resurrected by an obstacle.
+— Then turn the lamp all the way down: one indivisible photon at a time — and the ball stops being about light." style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:32px; background:#002157; background-image:repeating-linear-gradient(to right, rgba(255,255,255,0.05) 0 1.5px, transparent 1.5px 48px), repeating-linear-gradient(to bottom, rgba(255,255,255,0.05) 0 1.5px, transparent 1.5px 48px); color:#FFFFFF; font-family:'Fraunces', Georgia, serif; box-sizing:border-box; padding:100px;">
+    <div style="font-family:'IBM Plex Mono', monospace; font-size:26px; letter-spacing:4px; color:#EE7203; font-weight:600;"><span>ACT V · STEPS 14–15</span></div>
+    <h2 style="font-size:88px; font-weight:700; margin:0; letter-spacing:-1.5px; text-align:center;"><span>One photon at a time</span></h2>
+    <p style="font-family:'IBM Plex Mono', monospace; font-size:28px; color:#AFE0F7; margin:0; text-align:center;"><span>interference in your hands · the smallest quantum computation</span></p>
+  </section>
+
+  <section data-label="Step 14" data-speaker-notes="The kitchen-table experiment (three sunglass lenses):
+— crossed sheets 0°/90°: darkness. Insert a THIRD sheet between them at 45°: light returns.
+— An added obstacle produced MORE light — no filters-only story survives.
+— The middle sheet asks the 45° question and re-prepares; two opposite-sign contributions stop cancelling. Interference — the sign doing work, on bright classical light.
+Drag the middle axis: output cos²·sin², maximal at 45°. Mention the full dictionary: H/V, ±45°, circular = three perpendicular diameters." style="display:flex; flex-direction:column; padding:90px 100px 80px; background:#FFFFFF; color:#002157; font-family:'Fraunces', Georgia, serif; box-sizing:border-box;">
+    <div style="display:flex; flex-direction:column; gap:14px;">
+      <div style="display:flex; justify-content:space-between; align-items:baseline; gap:24px; font-family:'IBM Plex Mono', monospace; font-size:24px; letter-spacing:3px; color:#EE7203; font-weight:600;"><span>STEP 14/15 — THE BALL, IN YOUR HANDS</span><span style="font-size:19px; letter-spacing:2px; color:#5C6E8F; font-weight:500;">ACT V · ONE PHOTON AT A TIME</span></div>
+      <h2 style="font-size:64px; font-weight:600; margin:0; letter-spacing:-1px;"><span>Light resurrected by an obstacle</span></h2>
+    </div>
+    <div style="display:flex; gap:56px; flex:1; align-items:center; margin-top:30px;">
+      <div style="width:470px; display:flex; flex-direction:column; gap:28px; font-size:30px; line-height:1.55;">
+        <p style="margin:0;"><span>Cross two sheets: darkness. Slide a third </span><em>between</em><span> them at 45°: </span><strong>light returns</strong><span> — an added obstacle made more light.</span></p>
+        <p style="margin:0;"><span>The middle sheet asks the 45° question and re-prepares its answer; two opposite-</span><em>sign</em><span> contributions stop cancelling. Interference, on bright classical light.</span></p>
+        <p style="margin:0; color:#5C6E8F;"><span>And the full dictionary: H/V, the ±45° coin and anti-coin, left/right circular — three famous pairs, three perpendicular diameters of your ball.</span></p>
+      </div>
+      <div style="flex:1; align-self:stretch; border:2px solid #AFE0F7; border-radius:14px; background-color:#FFFFFF; background-image:repeating-linear-gradient(to right, #E1F3FC 0 1.5px, transparent 1.5px 42px), repeating-linear-gradient(to bottom, #E1F3FC 0 1.5px, transparent 1.5px 42px); display:flex; align-items:center; justify-content:center; padding:16px;">
+        <x-import component="FigSheets" from="./fifteen-figures.jsx" style="width:100%;" hint-size="100%,560px"></x-import>
+      </div>
+    </div>
+  </section>
+
+  <section data-label="Step 15" data-speaker-notes="The finale. Two routes = one qubit; half-mirrors are quarter-turns; path length turns φ — the delay dial, made of distance.
+— φ=0: one detector clicks ALWAYS — opposite contributions cancel. Sweep φ: fringes cos²(φ/2).
+— Switch to the mystery-mixture source (each particle definitely one route, unknown which): fringes DIE to flat 50/50 — the center never fringes.
+— Now the quantum part: run it one photon at a time — the fringes survive, click by click. No one-route story survives; the amplitudes travel with the particle.
+Closing turn: the ball was never about light. It is about probability itself — and they just ran the smallest quantum computation." style="display:flex; flex-direction:column; padding:90px 100px 80px; background:#FFFFFF; color:#002157; font-family:'Fraunces', Georgia, serif; box-sizing:border-box;">
+    <div style="display:flex; flex-direction:column; gap:14px;">
+      <div style="display:flex; justify-content:space-between; align-items:baseline; gap:24px; font-family:'IBM Plex Mono', monospace; font-size:24px; letter-spacing:3px; color:#EE7203; font-weight:600;"><span>STEP 15/15 — ONE PHOTON AT A TIME</span><span style="font-size:19px; letter-spacing:2px; color:#5C6E8F; font-weight:500;">ACT V · ONE PHOTON AT A TIME</span></div>
+      <h2 style="font-size:64px; font-weight:600; margin:0; letter-spacing:-1px;"><span>The smallest quantum computation there is</span></h2>
+    </div>
+    <div style="display:flex; gap:56px; flex:1; align-items:center; margin-top:30px;">
+      <div style="width:470px; display:flex; flex-direction:column; gap:22px; font-size:30px; line-height:1.55;">
+        <p style="margin:0;"><span>Two routes are one qubit: half-mirrors are quarter-turns; path length turns the </span><strong>delay dial</strong><span> φ.</span></p>
+        <p style="margin:0;"><span>Fringes cos²(φ/2) from single clicks — while the mystery-mixture source (one route, unknown which) stays </span><strong>flat forever</strong><span>.</span></p>
+        <p style="margin:0; color:#5C6E8F;"><span>No ‘one route’ story survives: the amplitudes travel with each particle. Prepare · turn · read — the smallest quantum computation.</span></p>
+        <div style="border:2px solid #EE7203; border-radius:10px; background:#FDF1E5; padding:12px 18px; display:flex; flex-direction:column; gap:5px;"><span style="font-family:'IBM Plex Mono', monospace; font-size:17px; letter-spacing:1.5px; color:#C25400; font-weight:700;">CLAIM № 1 &amp; 4 · COX + MIT — REDEEMED</span><span style="font-size:20px; line-height:1.45;">One rule per path, added, squared last; wrong answers cancel. Both films, built by hand.</span></div>
+      </div>
+      <div style="flex:1; align-self:stretch; border:2px solid #AFE0F7; border-radius:14px; background-color:#FFFFFF; background-image:repeating-linear-gradient(to right, #E1F3FC 0 1.5px, transparent 1.5px 42px), repeating-linear-gradient(to bottom, #E1F3FC 0 1.5px, transparent 1.5px 42px); display:flex; align-items:center; justify-content:center; padding:16px;">
+        <x-import component="FigMZ" from="./fifteen-figures.jsx" style="width:100%;" hint-size="100%,560px"></x-import>
+      </div>
+    </div>
+  </section>
+
+  <section data-label="Closing" data-speaker-notes="Land the epilogue — two beats, in this order:
+— the Poincaré–Bloch ball is a STATISTICAL object: coins and lamplight built it, honest bookkeeping shaped it — quantum physics never added an axiom;
+— the wonder: dim the lamp until one particle flies at a time — and the whole ball is still there, carried by that single particle.
+Then look back:
+— two kinds of not-knowing, two scores, a half-disk;
+— light overflowed it twice — a lost sign, then a hidden dial — and honest bookkeeping grew into the ball;
+— and the ball lives in the wild: electron spins, photon polarization, atomic levels — each one IS this ball;
+— its rotations are the gates of a quantum computer, and everyone here ran their first sequence today.
+
+The receipt: all four film claims are now redeemed — read the chips out loud; nothing today was taken on faith.
+Pointers: the tutorial's evidence room (playgrounds and history), and the kitchen lab page — the whole ball on a table for under a hundred euros.
+Thank them; invite questions." style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:36px; background:#002157; background-image:repeating-linear-gradient(to right, rgba(255,255,255,0.05) 0 1.5px, transparent 1.5px 48px), repeating-linear-gradient(to bottom, rgba(255,255,255,0.05) 0 1.5px, transparent 1.5px 48px); color:#FFFFFF; font-family:'Fraunces', Georgia, serif; box-sizing:border-box; padding:100px;">
+    <div style="font-family:'IBM Plex Mono', monospace; font-size:26px; letter-spacing:4px; color:#EE7203; font-weight:600;"><span>EPILOGUE</span></div>
+    <h2 style="font-size:88px; font-weight:700; margin:0; letter-spacing:-1.5px; text-align:center;"><span>The ball in the wild</span></h2>
+    <p style="font-size:34px; line-height:1.55; margin:0; text-align:center; max-width:1300px;"><span>The ball grew out of honest statistics — coins, then lamplight — long before quantum theory named it. The wonder is what happens as the lamp dims: </span><strong>one indivisible particle carries the whole ball</strong><span>. Electron spins, photon polarization, two levels of an atom — each one </span><em>is</em><span> this ball, and its rotations are the gates of a quantum computer.</span></p>
+    <div style="display:flex; gap:16px; flex-wrap:wrap; justify-content:center; font-family:'IBM Plex Mono', monospace; font-size:20px; letter-spacing:1px;"><span style="border:2px solid #EE7203; border-radius:999px; padding:8px 22px; color:#FFD9B3;">CLAIM № 1 · COX ✓</span><span style="border:2px solid #EE7203; border-radius:999px; padding:8px 22px; color:#FFD9B3;">CLAIM № 2 · COX ✓</span><span style="border:2px solid #EE7203; border-radius:999px; padding:8px 22px; color:#FFD9B3;">CLAIM № 3 · MIT ✓</span><span style="border:2px solid #EE7203; border-radius:999px; padding:8px 22px; color:#FFD9B3;">CLAIM № 4 · MIT ✓</span></div>
+    <p style="font-family:'IBM Plex Mono', monospace; font-size:26px; color:#AFE0F7; margin:0; text-align:center;"><span>four claims redeemed — nothing taken on faith · keep playing: the evidence room · the kitchen lab</span></p>
+  </section>
+</x-import>
+</x-dc>
+</body>
+</html>
