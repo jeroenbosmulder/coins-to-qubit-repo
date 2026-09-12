@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>fake phones — room simulator</title>
+<script src="./relay-config.js"></script>
+<script src="./relay-transport.js"></script>
+<script src="./room.js"></script>
+<style>
+  body { font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #002157; background: #fff; margin: 0; padding: 18px; }
+  h1 { font-size: 16px; margin: 0 0 8px; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 8px 0; }
+  input, button { font: inherit; padding: 5px 9px; border: 1.5px solid #AFE0F7; border-radius: 6px; background: #fff; }
+  button.go { background: #EE7203; color: #fff; border-color: #002157; cursor: pointer; }
+  table { border-collapse: collapse; margin-top: 12px; }
+  td, th { border-bottom: 1px solid #E1F3FC; padding: 3px 10px; text-align: left; }
+  .muted { color: #5C6E8F; }
+</style>
+</head>
+<body>
+<h1>Fake phones</h1>
+<p class="muted">Opens N simulated participants on a session. They join with tags, then behave per scene:
+scene 1 → each flips ~every second until it has 10 flips for the current round (B: its mystery face, C: its secret bias).
+Local mode (no Supabase in relay-config.js) still works when the presenter deck is open in <em>another tab of this browser</em>.</p>
+<div class="row">
+  <label>session <input id="session" size="6" placeholder="KWQZ"></label>
+  <label>phones <input id="n" type="number" value="8" min="1" max="24" style="width:60px"></label>
+  <button class="go" id="start">start</button>
+  <button id="stop">stop</button>
+  <span id="status" class="muted"></span>
+</div>
+<table><thead><tr><th>tag</th><th>seat</th><th>scene</th><th>round</th><th>A</th><th>B</th><th>C</th><th>bias</th><th>θ</th><th>beam 0°/45°</th></tr></thead><tbody id="rows"></tbody></table>
+<script>
+(function () {
+  var phones = [], timer = null;
+  var $ = function (id) { return document.getElementById(id); };
+  var m = /[?&]session=([A-Za-z0-9]+)/.exec(location.search); if (m) $('session').value = m[1].toUpperCase();
+
+  function flipOne(p) { return Math.random() < p ? 1 : 0; }
+  function tally(f) { var o = {}; ['A','B','C'].forEach(function (r) { o[r] = { n: f[r].length, heads: f[r].filter(Boolean).length }; }); return o; }
+
+  function start() {
+    stop();
+    var session = $('session').value.trim().toUpperCase(); if (!session) return alert('session code?');
+    var n = Math.max(1, Math.min(24, +$('n').value || 8));
+    for (var i = 0; i < n; i++) (function (i) {
+      var id = 'fake-' + i + '-' + Math.random().toString(36).slice(2, 6);
+      var t = RoomTransport.open({ session: session, role: 'participant', clientId: id });
+      var p = Room.createParticipant({ session: session, clientId: id, transport: t });
+      var ph = { i: i, p: p, t: t, tag: Room.TAGS[i % Room.TAGS.length], flips: { A: [], B: [], C: [] }, beam: { noise: 0, q: {} } };
+      phones.push(ph);
+      setTimeout(function () { p.join(ph.tag); }, 100 + i * 60);
+    })(i);
+    timer = setInterval(tick, 1000);
+    $('status').textContent = n + ' phones on ' + session + ' (' + (RoomTransport.hasSupabase() ? 'Supabase' : 'local mode') + ')';
+  }
+  function stop() { phones.forEach(function (ph) { ph.p.close(); }); phones = []; if (timer) clearInterval(timer); timer = null; render(); }
+  var lastToken = {};
+  function tick() {
+    phones.forEach(function (ph) {
+      var st = ph.p.get(), s = st.state, me = st.me; if (!me) return;
+      if (s.resetToken !== lastToken[ph.tag + ph.t.clientId]) { lastToken[ph.tag + ph.t.clientId] = s.resetToken; ph.flips[s.round || 'A'] = []; ph.p.send('tally', tally(ph.flips)); }
+      if (s.scene === 1) {
+        var round = s.round || 'A', p = round === 'A' ? 0.5 : round === 'B' ? me.face : me.bias;
+        if (ph.flips[round].length < 10 && Math.random() < 0.7) { ph.flips[round].push(flipOne(p)); ph.p.send('tally', tally(ph.flips)); }
+      }
+      // light: measure 25 photons per question asked; scene 10: every third phone turns up the noise
+      if (s.scene >= 8 && s.scene <= 13) {
+        var q = s.scene === 8 || s.scene === 9 ? 0 : (s.question || 0), key = String(q);
+        if (s.scene === 10 && ph.i % 3 === 2 && ph.beam.noise === 0) { ph.beam = { noise: 1, q: {} }; ph.p.send('beam', ph.beam); }
+        if (!ph.beam.q[key] || ph.beam.q[key].n < 25) {
+          var cur = ph.beam.q[key] || { n: 0, passed: 0 }, k = 5, passed = 0;
+          for (var j = 0; j < k; j++) passed += Room.photon(me.theta, q, ph.beam.noise);
+          ph.beam.q[key] = { n: cur.n + k, passed: cur.passed + passed }; ph.p.send('beam', ph.beam);
+        }
+      }
+    });
+    render();
+  }
+  function render() {
+    $('rows').innerHTML = phones.map(function (ph) {
+      var st = ph.p.get(), s = st.state, me = st.me;
+      return '<tr><td>' + ph.tag + '</td><td>' + (me ? me.slot : '…') + '</td><td>' + s.scene + '</td><td>' + (s.round || '') + '</td><td>' +
+        ph.flips.A.filter(Boolean).length + '/' + ph.flips.A.length + '</td><td>' + ph.flips.B.filter(Boolean).length + '/' + ph.flips.B.length + '</td><td>' + ph.flips.C.filter(Boolean).length + '/' + ph.flips.C.length + '</td><td class="muted">' + (me ? me.bias : '') + '</td><td class="muted">' + (me ? me.theta + '°' : '') + '</td><td>' + ['0','45'].map(function (k) { var d = ph.beam.q[k]; return d ? d.passed + '/' + d.n : '–'; }).join(' · ') + (ph.beam.noise ? ' noisy' : '') + '</td></tr>';
+    }).join('');
+  }
+  $('start').onclick = start; $('stop').onclick = stop;
+})();
+</script>
+</body>
+</html>
