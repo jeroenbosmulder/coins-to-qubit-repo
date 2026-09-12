@@ -1,0 +1,18 @@
+{
+  "name": "coins-to-qubit-room",
+  "private": true,
+  "version": "0.4.0",
+  "description": "Build your own qubit — live-session tutorial + presenter deck (coins → light → qubit)",
+  "scripts": {
+    "test": "node room/test/protocol.test.js && node room/test/participant.test.js && node room/test/presenter.test.js",
+    "build:tutorial": "python3 next/build-index.py",
+    "serve": "python3 -m http.server 8000"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.24.0",
+    "@babel/preset-react": "^7.24.0",
+    "jsdom": "^24.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  }
+}
