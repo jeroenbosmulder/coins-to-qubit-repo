@@ -29,7 +29,7 @@ Local mode (no Supabase in relay-config.js) still works when the presenter deck 
   <button id="stop">stop</button>
   <span id="status" class="muted"></span>
 </div>
-<table><thead><tr><th>tag</th><th>seat</th><th>scene</th><th>round</th><th>A</th><th>B</th><th>C</th><th>bias</th><th>θ</th><th>beam 0°/45°</th></tr></thead><tbody id="rows"></tbody></table>
+<table><thead><tr><th>tag</th><th>seat</th><th>scene</th><th>round</th><th>A</th><th>B</th><th>C</th><th>bias</th><th>θ / δ</th><th>beam 0°/45°/C</th></tr></thead><tbody id="rows"></tbody></table>
 <script>
 (function () {
   var phones = [], timer = null;
@@ -47,7 +47,7 @@ Local mode (no Supabase in relay-config.js) still works when the presenter deck 
       var id = 'fake-' + i + '-' + Math.random().toString(36).slice(2, 6);
       var t = RoomTransport.open({ session: session, role: 'participant', clientId: id });
       var p = Room.createParticipant({ session: session, clientId: id, transport: t });
-      var ph = { i: i, p: p, t: t, tag: Room.TAGS[i % Room.TAGS.length], flips: { A: [], B: [], C: [] }, beam: { noise: 0, q: {} } };
+      var ph = { i: i, p: p, t: t, tag: Room.TAGS[i % Room.TAGS.length], flips: { A: [], B: [], C: [] }, beam: { noise: 0, q: {} }, photon: {}, noiseAt: -1 };
       phones.push(ph);
       setTimeout(function () { p.join(ph.tag); }, 100 + i * 60);
     })(i);
@@ -65,15 +65,23 @@ Local mode (no Supabase in relay-config.js) still works when the presenter deck 
         if (ph.flips[round].length < 10 && Math.random() < 0.7) { ph.flips[round].push(flipOne(p)); ph.p.send('tally', tally(ph.flips)); }
       }
       // light: measure 25 photons per question asked; scene 10: every third phone turns up the noise
-      if (s.scene >= 8 && s.scene <= 13) {
+      if (s.scene >= 8 && s.scene <= 16) {
         var q = s.scene === 8 || s.scene === 9 ? 0 : (s.question || 0), key = String(q);
+        if (s.scene === 15 && (ph.beam.q['0'] || {}).n >= 25 && (ph.beam.q['45'] || {}).n < 25) { q = 45; key = '45'; }
+        if (s.scene === 15 && s.question === 'C') { q = 'C'; key = 'C'; }
         if (s.scene === 10 && ph.i % 3 === 2 && ph.beam.noise === 0) { ph.beam = { noise: 1, q: {} }; ph.p.send('beam', ph.beam); }
         if (!ph.beam.q[key] || ph.beam.q[key].n < 25) {
           var cur = ph.beam.q[key] || { n: 0, passed: 0 }, k = 5, passed = 0;
-          for (var j = 0; j < k; j++) passed += Room.photon(me.theta, q, ph.beam.noise);
+          for (var j = 0; j < k; j++) passed += Room.photon(me.theta, q, ph.beam.noise, me.delta);
           ph.beam.q[key] = { n: cur.n + k, passed: cur.passed + passed }; ph.p.send('beam', ph.beam);
         }
       }
+      // Mach–Zehnder: one press per armed round; encore: add noise once per reset
+      if (s.scene === 17 && s.armed && !ph.photon[s.mzRound]) {
+        ph.photon[s.mzRound] = { phi: s.mzPhi || 0, source: s.mzSource || 'amplitudes', detector: Math.random() < Room.mzP1(s.mzPhi || 0, s.mzSource) ? 1 : 2, at: Date.now() };
+        ph.p.send('photon', ph.photon);
+      }
+      if (s.scene === 19 && ph.noiseAt !== (s.noiseReset || 0)) { ph.noiseAt = s.noiseReset || 0; ph.p.send('noise', { delta: Math.round(Math.random() * 360) }); }
     });
     render();
   }
@@ -81,7 +89,7 @@ Local mode (no Supabase in relay-config.js) still works when the presenter deck 
     $('rows').innerHTML = phones.map(function (ph) {
       var st = ph.p.get(), s = st.state, me = st.me;
       return '<tr><td>' + ph.tag + '</td><td>' + (me ? me.slot : '…') + '</td><td>' + s.scene + '</td><td>' + (s.round || '') + '</td><td>' +
-        ph.flips.A.filter(Boolean).length + '/' + ph.flips.A.length + '</td><td>' + ph.flips.B.filter(Boolean).length + '/' + ph.flips.B.length + '</td><td>' + ph.flips.C.filter(Boolean).length + '/' + ph.flips.C.length + '</td><td class="muted">' + (me ? me.bias : '') + '</td><td class="muted">' + (me ? me.theta + '°' : '') + '</td><td>' + ['0','45'].map(function (k) { var d = ph.beam.q[k]; return d ? d.passed + '/' + d.n : '–'; }).join(' · ') + (ph.beam.noise ? ' noisy' : '') + '</td></tr>';
+        ph.flips.A.filter(Boolean).length + '/' + ph.flips.A.length + '</td><td>' + ph.flips.B.filter(Boolean).length + '/' + ph.flips.B.length + '</td><td>' + ph.flips.C.filter(Boolean).length + '/' + ph.flips.C.length + '</td><td class="muted">' + (me ? me.bias : '') + '</td><td class="muted">' + (me ? me.theta + '° / ' + me.delta + '°' : '') + '</td><td>' + ['0','45','C'].map(function (k) { var d = ph.beam.q[k]; return d ? d.passed + '/' + d.n : '–'; }).join(' · ') + (ph.beam.noise ? ' noisy' : '') + '</td></tr>';
     }).join('');
   }
   $('start').onclick = start; $('stop').onclick = stop;

@@ -66,12 +66,40 @@
   // ── light helpers (both sides) ──
   var DEG = Math.PI / 180;
   function malus(theta, alpha) { var c = Math.cos((theta - alpha) * DEG); return c * c; }
-  /* one photon of a beam at `theta` (deg), polarization wandering by `noise`∈[0,1], meeting a sheet at `alpha` */
-  function photon(theta, alpha, noise) {
+  /* A beam is (theta, delta): the H/V split is cos θ : sin θ, and the V-part lags the H-part by the delay δ.
+     δ = 0 → linear at θ; δ = ±90° with θ = 45° → circular (the impostor). Fraction passing a question:
+       sheet at α :  cos²θ cos²α + sin²θ sin²α + 2 cosθ sinθ cosα sinα cos δ
+       'C' (delay + sheet, i.e. the circular question):  ½ + cosθ sinθ sin δ                            */
+  function passProb(theta, delta, alpha) {
+    var a = Math.cos(theta * DEG), b = Math.sin(theta * DEG), d = (delta || 0) * DEG;
+    if (alpha === 'C') return 0.5 + a * b * Math.sin(d);
+    var ca = Math.cos(alpha * DEG), sa = Math.sin(alpha * DEG);
+    return a * a * ca * ca + b * b * sa * sa + 2 * a * b * ca * sa * Math.cos(d);
+  }
+  /* one photon of a beam at `theta`, delay `delta`, polarization wandering by `noise`∈[0,1], meeting question `alpha` */
+  function photon(theta, alpha, noise, delta) {
     var t = theta + (noise ? noise * (Math.random() * 180 - 90) : 0);
-    return Math.random() < malus(t, alpha) ? 1 : 0;
+    return Math.random() < passProb(t, delta, alpha) ? 1 : 0;
   }
   function pOf(q, angle) { var d = q && q[String(angle)]; return d && d.n > 0 ? d.passed / d.n : null; }
+  /* Stokes-like coordinates (radius ½ for a pure beam): s1 from the 0° sheet, s2 from the 45° sheet, s3 from the circular question */
+  function stokes(theta, delta) {
+    return { s1: passProb(theta, delta, 0) - 0.5, s2: passProb(theta, delta, 45) - 0.5, s3: passProb(theta, delta, 'C') - 0.5 };
+  }
+  function stokesOf(q) {
+    var p0 = pOf(q, 0), p45 = pOf(q, 45), pc = pOf(q, 'C');
+    return { s1: p0 === null ? null : p0 - 0.5, s2: p45 === null ? null : p45 - 0.5, s3: pc === null ? null : pc - 0.5 };
+  }
+  /* simple 3D view of the ball: s1 → right, s3 → up, s2 → toward the viewer; view = { az, el } in degrees */
+  function project(sv, view) {
+    var az = ((view && view.az) || 0) * DEG, el = ((view && view.el) || 0) * DEG;
+    var x = sv.s1 || 0, y = sv.s2 || 0, z = sv.s3 || 0;
+    var x1 = x * Math.cos(az) - y * Math.sin(az), y1 = x * Math.sin(az) + y * Math.cos(az);
+    var z2 = z * Math.cos(el) - y1 * Math.sin(el), y2 = z * Math.sin(el) + y1 * Math.cos(el);
+    return { x: x1, y: z2, depth: y2 };      // depth > 0 = nearer the viewer
+  }
+  /* Mach–Zehnder: probability of detector 1 for path-length dial φ (deg); a mixture source ignores φ */
+  function mzP1(phi, source) { if (source === 'mixture') return 0.5; var c = Math.cos((phi / 2) * DEG); return c * c; }
 
   var TAGS = ['🦊','🐙','🦉','🐢','🦋','🐝','🐬','🦩','🐸','🦔','🐧','🦒','🐳','🦜','🐞','🦎','🐨','🦚','🐿️','🦭','🐌','🦀','🐇','🦓'];
 
@@ -116,7 +144,7 @@
 
     var store = makeStore({
       session: session, role: role, status: t.status,
-      state: (saved && saved.state) || { scene: 0, round: 'A', resetToken: 0, p: 0.5, question: 0, lens2: 90, mid: 45, roster: {} },
+      state: (saved && saved.state) || { scene: 0, round: 'A', resetToken: 0, p: 0.5, question: 0, lens2: 90, mid: 45, view: { az: -35, el: 22 }, theta: 45, delta: 0, mzPhi: 0, mzSource: 'amplitudes', mzRound: 0, armed: false, roster: {} },
       phones: (saved && saved.phones) || {},
       memo: {},                                    // scratch for figures (histories etc.)
     });
@@ -185,6 +213,7 @@
         tallies(r).phones.forEach(function (x) { out.tally[r].push({ slot: x.slot, tag: x.tag, n: x.n, heads: x.heads }); });
       });
       beams().forEach(function (b) { out.beam.push({ slot: b.slot, tag: b.tag, noise: b.noise, q: b.q }); });
+      var R = rounds(); out.rounds = Object.keys(R).map(function (k) { var r = R[k]; return { round: r.round, phi: r.phi, source: r.source, n: r.n, d1: r.d1 }; });
       return out;
     }
     function scheduleAgg() {
@@ -245,6 +274,26 @@
       });
       return out.sort(function (a, b) { return a.slot - b.slot; });
     }
+    /* Part IV. photon snapshot per phone = { [roundId]: { phi, source, detector } };  noise snapshot = { delta } */
+    function rounds() {
+      var ph = store.get().phones, out = {};
+      Object.keys(ph).forEach(function (f) {
+        var m = ph[f].up && ph[f].up.photon; if (!m) return;
+        Object.keys(m).forEach(function (rid) {
+          var r = m[rid]; if (!r) return;
+          var o = out[rid] || (out[rid] = { round: Number(rid), phi: r.phi, source: r.source, n: 0, d1: 0, clicks: [] });
+          o.n++; if (r.detector === 1) o.d1++;
+          o.clicks.push({ slot: ph[f].slot, tag: ph[f].tag, detector: r.detector, at: r.at || 0 });
+        });
+      });
+      Object.keys(out).forEach(function (rid) { out[rid].clicks.sort(function (a, b) { return a.at - b.at; }); });
+      return out;
+    }
+    function noises() {
+      var ph = store.get().phones, out = [];
+      Object.keys(ph).forEach(function (f) { var d = ph[f].up && ph[f].up.noise; if (d && typeof d.delta === 'number') out.push({ slot: ph[f].slot, tag: ph[f].tag, delta: d.delta }); });
+      return out;
+    }
     function resetRound(round) {
       var cur = store.get(), phones = {};
       Object.keys(cur.phones).forEach(function (f) {
@@ -262,7 +311,7 @@
     var api = {
       session: session, role: role, transport: t,
       get: store.get, subscribe: store.subscribe,
-      publish: publish, bindDeck: bindDeck, tallies: tallies, beams: beams, resetRound: resetRound, setMemo: setMemo,
+      publish: publish, bindDeck: bindDeck, tallies: tallies, beams: beams, rounds: rounds, noises: noises, resetRound: resetRound, setMemo: setMemo,
       participantUrl: function () { return participantUrl(session); },
       close: function () { t.removeEventListener('message', onMessage); if (!opts.transport) t.close(); },
     };
@@ -280,7 +329,7 @@
     var store = makeStore({
       session: session, status: t.status, from: t.clientId,
       tag: (saved && saved.tag) || null, joined: !!(saved && saved.tag),
-      state: { scene: 0, round: 'A', resetToken: 0, p: 0.5, question: 0, lens2: 90, mid: 45, roster: {} },
+      state: { scene: 0, round: 'A', resetToken: 0, p: 0.5, question: 0, lens2: 90, mid: 45, view: { az: -35, el: 22 }, theta: 45, delta: 0, mzPhi: 0, mzSource: 'amplitudes', mzRound: 0, armed: false, roster: {} },
       me: null,                                     // { slot, tag, bias, theta, delta, twin }
       snapshots: (saved && saved.snapshots) || {},  // last sent per name (re-sent on reconnect)
     });
@@ -341,7 +390,7 @@
     var R = global.React;
     return R.useSyncExternalStore(s.subscribe, s.get, s.get);
   }
-  function usePresenter() { var p = presenter(); var snap = useStore(p); return shallowMerge(snap, { transport: p.transport, publish: p.publish, tallies: p.tallies, beams: p.beams, resetRound: p.resetRound, setMemo: p.setMemo, participantUrl: p.participantUrl }); }
+  function usePresenter() { var p = presenter(); var snap = useStore(p); return shallowMerge(snap, { transport: p.transport, publish: p.publish, tallies: p.tallies, beams: p.beams, rounds: p.rounds, noises: p.noises, resetRound: p.resetRound, setMemo: p.setMemo, participantUrl: p.participantUrl }); }
   function useParticipant() {
     var p = participant();
     var R = global.React;
@@ -351,7 +400,8 @@
   }
 
   global.Room = {
-    SLOTS: SLOTS, TAGS: TAGS, secrets: secrets, malus: malus, photon: photon, pOf: pOf,
+    SLOTS: SLOTS, TAGS: TAGS, secrets: secrets, malus: malus, passProb: passProb, photon: photon, pOf: pOf,
+    stokes: stokes, stokesOf: stokesOf, project: project, mzP1: mzP1,
     newSession: newSession, sessionFromUrl: sessionFromUrl, isMirrorUrl: isMirrorUrl, participantUrl: participantUrl,
     createPresenter: createPresenter, createParticipant: createParticipant,
     presenter: presenter, participant: participant,
