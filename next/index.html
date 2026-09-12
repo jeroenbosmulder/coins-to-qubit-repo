@@ -3748,6 +3748,7 @@ function useBeam(room) {
   const [beam, setBeam] = useState(() => { try { const v = JSON.parse(sessionStorage.getItem(key)); if (v && v.q) return v; } catch (e) {} return { noise: 0, q: {} }; });
   useEffect(() => { try { sessionStorage.setItem(key, JSON.stringify(beam)); } catch (e) {} room.send("beam", beam); }, [beam]);
   const theta = room.me ? room.me.theta : null;
+  const delta = room.me ? room.me.delta : 0;
   /* results = array of 0/1 clicks already drawn with Room.photon (so the caller can also show them) */
   const addResults = (angle, results) => {
     if (theta === null || !results.length) return;
@@ -3759,7 +3760,7 @@ function useBeam(room) {
   };
   const setNoise = (v) => setBeam((b) => ({ noise: v, q: {} }));      // a new beam: old tallies no longer apply
   const reset = () => setBeam({ noise: 0, q: {} });
-  return { beam, theta, addResults, setNoise, reset };
+  return { beam, theta, delta, addResults, setNoise, reset };
 }
 
 function PhotonBench({ angle, tally, onOne, onMany, disabled, log }) {
@@ -3823,7 +3824,7 @@ function RoomStep8({ room }) {
   const L = useClickLog();
   const q = 0;
   const tally = B.beam.q["0"];
-  const fire = (k) => { if (B.theta === null) return; const arr = []; for (let i = 0; i < k; i++) arr.push(Room.photon(B.theta, q, B.beam.noise)); L.push(arr); B.addResults(q, arr); };
+  const fire = (k) => { if (B.theta === null) return; const arr = []; for (let i = 0; i < k; i++) arr.push(Room.photon(B.theta, q, B.beam.noise, B.delta)); L.push(arr); B.addResults(q, arr); };
   return (
     <div>
       <p>Your phone now holds a <strong>beam of light</strong> with a polarization angle you cannot see — it came with your seat. Send photons one at a time through a horizontal sheet: each one either passes (a click) or is blocked. Heads or tails.</p>
@@ -3872,7 +3873,7 @@ function RoomStep10({ room }) {
   const L = useClickLog();
   const t0 = B.beam.q["0"], p = t0 && t0.n ? t0.passed / t0.n : null;
   const spot = room.state.spotlight || [];
-  const fire = (k) => { const arr = []; for (let i = 0; i < k; i++) arr.push(Room.photon(B.theta, 0, B.beam.noise)); L.push(arr); B.addResults(0, arr); };
+  const fire = (k) => { const arr = []; for (let i = 0; i < k; i++) arr.push(Room.photon(B.theta, 0, B.beam.noise, B.delta)); L.push(arr); B.addResults(0, arr); };
   const mine = room.me && spot.includes(room.me.slot);
   return (
     <div>
@@ -3893,7 +3894,7 @@ function RoomStep11({ room }) {
   const q = room.state.question ?? 0;
   const tq = B.beam.q[String(q)];
   const t0 = B.beam.q["0"], t45 = B.beam.q["45"];
-  const fire = (k) => { const arr = []; for (let i = 0; i < k; i++) arr.push(Room.photon(B.theta, q, B.beam.noise)); L.push(arr); B.addResults(q, arr); };
+  const fire = (k) => { const arr = []; for (let i = 0; i < k; i++) arr.push(Room.photon(B.theta, q, B.beam.noise, B.delta)); L.push(arr); B.addResults(q, arr); };
   const [mid, setMid] = useState(45); const [midIn, setMidIn] = useState(false);
   const T1 = midIn ? Room.malus(0, mid) : 1, T = T1 * (midIn ? Room.malus(mid, 90) : 0);
   return (
@@ -3966,8 +3967,192 @@ function RoomStep13({ room }) {
   );
 }
 
+// ═══════════════ PART III–IV (phone side) ═══════════════
+function useTicker(running) {
+  const [t, setT] = useState(0);
+  useEffect(() => {
+    if (!running) return;
+    let id, t0 = performance.now();
+    const tick = (now) => { setT((now - t0) / 1000); id = requestAnimationFrame(tick); };
+    id = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(id);
+  }, [running]);
+  return t;
+}
+const stokesMine = (B) => (typeof Room !== "undefined" ? Room.stokesOf(B.beam.q) : { s1: null, s2: null, s3: null });
+
+function PhoneBall({ view, dots, demo }) {
+  const cx = 170, cy = 130, R = 105;
+  const P = (sv) => { const q = Room.project(sv, view); return { x: cx + q.x * 2 * R, y: cy - q.y * 2 * R, depth: q.depth }; };
+  const ring = (fn) => Array.from({ length: 49 }, (_, i) => { const q = P(fn((i / 48) * 2 * Math.PI)); return `${q.x.toFixed(1)},${q.y.toFixed(1)}`; }).join(" ");
+  const ax = (sv, label, col) => { const q = P(sv); return <g key={label}><line x1={cx} y1={cy} x2={q.x} y2={q.y} stroke={col} strokeWidth="1.5" opacity={q.depth < 0 ? 0.3 : 0.9} /><text x={q.x + (q.x - cx) * 0.14} y={q.y + (q.y - cy) * 0.14 + 4} textAnchor="middle" fontFamily={mono} fontSize="9" fill={col} fontWeight="600">{label}</text></g>; };
+  return (
+    <svg viewBox="0 0 340 260" style={{ width: "100%", background: "#fff", border: `1.5px solid ${C.gridBold}`, borderRadius: 8, display: "block" }}>
+      <circle cx={cx} cy={cy} r={R} fill="#fff" stroke={C.ink} strokeWidth="1.5" />
+      <polyline points={ring((a) => ({ s1: 0.5 * Math.cos(a), s2: 0.5 * Math.sin(a), s3: 0 }))} fill="none" stroke={C.inkSoft} strokeWidth="1" strokeDasharray="4 3" />
+      {[ax({ s1: 0.6, s2: 0, s3: 0 }, "H", C.gold), ax({ s1: -0.6, s2: 0, s3: 0 }, "V", C.gold), ax({ s1: 0, s2: 0.6, s3: 0 }, "45°", C.teal), ax({ s1: 0, s2: 0, s3: 0.6 }, "circ", C.violet)]}
+      {(dots || []).map((d, i) => { const q = P(d.sv); return <g key={i} opacity={q.depth < 0 ? 0.35 : 1}><circle cx={q.x} cy={q.y} r={d.mine ? 7 : 4} fill={d.color} stroke={d.mine ? C.ink : "none"} strokeWidth="1.5" />{d.mine && <text x={q.x} y={q.y - 10} textAnchor="middle" fontSize="12">{d.tag}</text>}</g>; })}
+      {demo && (() => { const q = P(demo); return <g><line x1={cx} y1={cy} x2={q.x} y2={q.y} stroke={C.violet} strokeWidth="2.5" /><circle cx={q.x} cy={q.y} r="6" fill={C.violet} stroke={C.ink} strokeWidth="1.5" /></g>; })()}
+    </svg>
+  );
+}
+
+// ── SCENE 14 : the shadow ──
+function RoomStep14({ room }) {
+  const [run, setRun] = useState(true);
+  const unlocked = !!room.state.unlockDelay;
+  const [own, setOwn] = useState(null);
+  const off = own === null ? (room.state.clockOffset ?? 0) : own;
+  const t = useTicker(run);
+  const ph = 2 * Math.PI * 0.4 * t, th = 35 * DEG;
+  const hx = Math.cos(th) * Math.cos(ph), vy = Math.sin(th) * Math.cos(ph - off * DEG);
+  const Clock = ({ x, y, a, col }) => <g><circle cx={x} cy={y} r="13" fill="#fff" stroke={col} strokeWidth="1.5" /><line x1={x} y1={y} x2={x + 10 * Math.cos(a)} y2={y - 10 * Math.sin(a)} stroke={col} strokeWidth="2" strokeLinecap="round" /></g>;
+  return (
+    <div>
+      <p>Watch a linear beam's field tip: it bounces back and forth along a line. A point bouncing on a line is exactly what the <em>shadow</em> of a point going round a circle looks like. So — is the bounce the shadow of something with one more knob?</p>
+      <svg viewBox="0 0 340 230" style={{ width: "100%", background: "#fff", border: `1.5px solid ${C.gridBold}`, borderRadius: 8, display: "block" }}>
+        <circle cx={80} cy={110} r="60" fill="none" stroke={C.ink} strokeWidth="1.2" />
+        <line x1={80 - 60 * Math.cos(th)} y1={110 + 60 * Math.sin(th)} x2={80 + 60 * Math.cos(th)} y2={110 - 60 * Math.sin(th)} stroke={C.inkSoft} strokeWidth="1.2" />
+        <circle cx={80 + 60 * (Math.cos(ph) * Math.cos(th) - Math.sin(ph) * Math.sin(th))} cy={110 - 60 * (Math.cos(ph) * Math.sin(th) + Math.sin(ph) * Math.cos(th))} r="5" fill={C.violet} />
+        <circle cx={80 + 60 * Math.cos(ph) * Math.cos(th)} cy={110 - 60 * Math.cos(ph) * Math.sin(th)} r="5" fill={C.gold} stroke={C.ink} strokeWidth="1" />
+        <text x={80} y={200} textAnchor="middle" fontFamily={mono} fontSize="9" fill={C.inkSoft}>round trip, and its shadow</text>
+        <line x1={190} y1={170} x2={320} y2={170} stroke={C.gold} strokeWidth="2" /><line x1={190} y1={170} x2={190} y2={40} stroke={C.teal} strokeWidth="2" />
+        <text x={318} y={184} textAnchor="end" fontFamily={mono} fontSize="9" fill={C.gold}>H-part</text><text x={196} y={44} fontFamily={mono} fontSize="9" fill={C.teal}>V-part</text>
+        <line x1={190} y1={170} x2={190 + 120 * hx} y2={170 - 120 * vy} stroke={C.violet} strokeWidth="3" strokeLinecap="round" />
+        <circle cx={190 + 120 * hx} cy={170 - 120 * vy} r="5" fill={C.violet} />
+        <Clock x={325} y={150} a={ph} col={C.gold} /><Clock x={210} y={25} a={ph - off * DEG} col={C.teal} />
+        <text x={255} y={210} textAnchor="middle" fontFamily={mono} fontSize="9" fill={C.inkSoft}>{off === 0 ? "clocks in step → a line" : `V lags ${off}° → a loop`}</text>
+      </svg>
+      <div style={{ display: "flex", gap: 8, marginTop: 8, alignItems: "center" }}>
+        <Btn kind="ghost" onClick={() => setRun((v) => !v)}>{run ? "pause" : "play"}</Btn>
+        <div style={{ flex: 1, opacity: unlocked ? 1 : 0.4 }}><Slider value={off} min={0} max={180} step={5} onChange={unlocked ? setOwn : () => {}} label={unlocked ? "offset the clocks" : "offset the clocks — locked"} readout={`${off}°`} /></div>
+      </div>
+      <Notice>The needle's two parts each carry a little clock, and so far the two clocks tick in step. The only knob we have not turned is the offset between them. That knob is a <em>delay</em> of one part behind the other — and it is the next scene. (This is a hint, not a proof.)</Notice>
+    </div>
+  );
+}
+
+// ── SCENE 15 : the impostor ──
+function RoomStep15({ room }) {
+  const B = useBeam(room);
+  const L = useClickLog();
+  const [q, setQ] = useState(0);
+  const lift = !!room.state.lift;
+  const st = stokesMine(B);
+  const fire = (k) => { const arr = []; for (let i = 0; i < k; i++) arr.push(Room.photon(B.theta, q, B.beam.noise, B.delta)); L.push(arr); B.addResults(q, arr); };
+  const r = st.s1 !== null && st.s2 !== null ? Math.hypot(st.s1, st.s2) : null;
+  const pure = B.beam.noise < 0.05;
+  const cx = 110, cy = 110, R = 80;
+  return (
+    <div>
+      <p>Three questions for your beam: the 0° sheet, the 45° sheet, and a new one — a <strong>delay</strong> (the V-part lags the H-part by a quarter turn) followed by a sheet. Ask each one 25 photons.</p>
+      <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
+        {[0, 45, "C"].map((a) => <button key={a} onClick={() => { setQ(a); L.clear(); }} style={{ fontFamily: mono, fontSize: 11, padding: "5px 10px", borderRadius: 12, cursor: "pointer", border: `1.5px solid ${q === a ? C.gold : C.gridBold}`, background: q === a ? C.goldSoft : "#fff", color: C.ink }}>{a === "C" ? "delay + sheet" : `${a}° sheet`}</button>)}
+      </div>
+      <PhotonBench angle={q === "C" ? 0 : q} tally={B.beam.q[String(q)]} log={L.log} disabled={B.theta === null} onOne={() => fire(1)} onMany={() => fire(25)} />
+      <div style={{ fontFamily: mono, fontSize: 12, color: C.ink, margin: "8px 0" }}>
+        0°: {st.s1 === null ? "—" : (st.s1 + 0.5).toFixed(2)} · 45°: {st.s2 === null ? "—" : (st.s2 + 0.5).toFixed(2)} · delay: {st.s3 === null ? "—" : (st.s3 + 0.5).toFixed(2)}
+      </div>
+      <svg viewBox="0 0 340 230" style={{ width: "100%", background: "#fff", border: `1.5px solid ${C.gridBold}`, borderRadius: 8, display: "block" }}>
+        <circle cx={cx} cy={cy} r={R} fill="none" stroke={C.ink} strokeWidth="1.5" /><line x1={cx - R} y1={cy} x2={cx + R} y2={cy} stroke={C.inkSoft} strokeWidth="1" /><line x1={cx} y1={cy - R} x2={cx} y2={cy + R} stroke={C.inkSoft} strokeWidth="1" />
+        <text x={cx} y={215} textAnchor="middle" fontFamily={mono} fontSize="9" fill={C.inkSoft}>the disk: 0° across, 45° up</text>
+        {r !== null && <g><circle cx={cx + st.s1 * 2 * R} cy={cy - st.s2 * 2 * R} r="7" fill={pure ? C.gold : C.inkSoft} stroke={C.ink} strokeWidth="1.5" />{pure && r < 0.42 && <circle cx={cx + st.s1 * 2 * R} cy={cy - st.s2 * 2 * R} r="14" fill="none" stroke={C.red} strokeWidth="2" />}</g>}
+        <circle cx={240} cy={cy} r={R} fill="none" stroke={C.ink} strokeWidth="1.5" opacity={lift ? 1 : 0.2} /><line x1={240 - R} y1={cy} x2={240 + R} y2={cy} stroke={C.inkSoft} strokeWidth="1" opacity={lift ? 1 : 0.2} /><line x1={240} y1={cy - R} x2={240} y2={cy + R} stroke={C.inkSoft} strokeWidth="1" opacity={lift ? 1 : 0.2} />
+        <text x={240} y={215} textAnchor="middle" fontFamily={mono} fontSize="9" fill={C.inkSoft}>{lift ? "side view: 45° across, delay up" : "side view (presenter lifts)"}</text>
+        {lift && st.s2 !== null && st.s3 !== null && <circle cx={240 + st.s2 * 2 * R} cy={cy - st.s3 * 2 * R} r="7" fill={pure ? C.gold : C.inkSoft} stroke={C.ink} strokeWidth="1.5" />}
+      </svg>
+      <Notice>{pure && r !== null && r < 0.42
+        ? "Your beam has no noise at all — it is pure — and yet it sits inside the disk, where only mixtures were allowed. Every sheet you can turn says the same thing. Two different things at one point: the disk is too small."
+        : "A beam that answers 50% to every sheet angle looks unpolarized — the centre of the disk. If it is pure, the delay question says 100% where unpolarized light says 50%. The disk is too small."}
+      </Notice>
+    </div>
+  );
+}
+
+// ── SCENE 16 : the ball ──
+function RoomStep16({ room }) {
+  const B = useBeam(room);
+  const view = room.state.view || { az: -35, el: 22 };
+  const [th, setTh] = useState(null); const [de, setDe] = useState(null);
+  const T = th === null ? (room.state.theta ?? 45) : th, D = de === null ? (room.state.delta ?? 0) : de;
+  const st = stokesMine(B);
+  const mine = st.s1 !== null && st.s2 !== null ? [{ sv: { s1: st.s1, s2: st.s2, s3: st.s3 === null ? 0 : st.s3 }, color: C.gold, mine: true, tag: room.tag }] : [];
+  const others = aggBeams(room).filter((b) => !(room.me && b.slot === room.me.slot)).map((b) => { const o = Room.stokesOf(b.q); return o.s1 === null || o.s2 === null ? null : { sv: { s1: o.s1, s2: o.s2, s3: o.s3 === null ? 0 : o.s3 }, color: "#F3C9A0" }; }).filter(Boolean);
+  const demo = Room.stokes(T, D);
+  return (
+    <div>
+      <p>Three questions, three numbers, one ball. The delay dial sweeps the disk out of its plane; every pure beam sits on the surface, every mixture inside. Nothing is left to ask.</p>
+      <PhoneBall view={view} dots={[...others, ...mine]} demo={demo} />
+      <Slider value={T} min={0} max={180} step={1} onChange={setTh} label="demo beam θ" readout={`${T}°`} />
+      <Slider value={D} min={0} max={360} step={5} onChange={setDe} label="demo beam delay" readout={`${D}°`} />
+      <div style={{ fontFamily: mono, fontSize: 11, color: C.inkSoft }}>{th === null && de === null ? "demo beam follows the presenter" : <button onClick={() => { setTh(null); setDe(null); }} style={{ fontFamily: mono, fontSize: 11, border: "none", background: "none", color: C.gold, cursor: "pointer", padding: 0 }}>follow the presenter again</button>}</div>
+      <Notice>Your beam is the gold dot with your name (height from the delay question; 0 if you did not ask it). This is the Bernoulli ball — the Poincaré sphere of optics, the Bloch ball of a qubit. Same ball.</Notice>
+    </div>
+  );
+}
+
+// ── SCENE 17 : one photon at a time — Mach–Zehnder ──
+function RoomStep17({ room }) {
+  const key = "pf-photon-" + room.session;
+  const [mine, setMine] = useState(() => { try { return JSON.parse(sessionStorage.getItem(key)) || {}; } catch (e) { return {}; } });
+  useEffect(() => { try { sessionStorage.setItem(key, JSON.stringify(mine)); } catch (e) {} room.send("photon", mine); }, [mine]);
+  const rid = room.state.mzRound ?? 0, armed = !!room.state.armed, phi = room.state.mzPhi ?? 0, src = room.state.mzSource || "amplitudes";
+  const done = !!mine[rid];
+  const press = () => { if (!armed || done) return; const d1 = Math.random() < Room.mzP1(phi, src); setMine((m) => ({ ...m, [rid]: { phi, source: src, detector: d1 ? 1 : 2, at: Date.now() } })); };
+  const rounds = (room.state.agg && room.state.agg.rounds) || [];
+  return (
+    <div>
+      <p>You are one photon. The presenter sets the path-length dial φ and arms a round; press once, and your photon flies through the interferometer and clicks at detector 1 or 2. Over a few rounds the room's clicks draw the fringe.</p>
+      <div style={{ fontFamily: mono, fontSize: 12, color: C.ink, marginBottom: 8 }}>round {rid} · φ = {phi}° · source: {src === "mixture" ? "mystery mixture (one route, unknown which)" : "both routes"}</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+        <button onClick={press} disabled={!armed || done} style={{ width: 110, height: 110, borderRadius: "50%", cursor: armed && !done ? "pointer" : "default", fontFamily: mono, fontWeight: 700, fontSize: 15, color: "#fff", border: `3px solid ${C.ink}`, opacity: armed && !done ? 1 : 0.4, background: `radial-gradient(circle at 35% 30%, #FFAE5E, ${C.gold})` }}>{done ? "flown" : armed ? "be measured" : "wait…"}</button>
+        <div style={{ fontFamily: mono, fontSize: 13 }}>
+          {done ? <>your click: <strong>detector {mine[rid].detector}</strong></> : armed ? "press once" : "waiting for the presenter to arm a round"}
+          {rounds.length > 0 && <div style={{ marginTop: 8, fontSize: 11, color: C.inkSoft }}>{rounds.map((r) => `#${r.round} φ=${r.phi}° ${r.source === "mixture" ? "mix" : ""}: ${r.d1}/${r.n} → D1`).join(" · ")}</div>}
+        </div>
+      </div>
+      <Notice>One photon, one indivisible click — and still, round by round, the fringe cos²(φ/2) appears, and disappears for the mixture. Each photon carries the whole ball: its needle, its two clocks. So did each coin. You have just run the smallest quantum computation there is.</Notice>
+    </div>
+  );
+}
+
+// ── SCENE 18 : the dictionary and the receipt ──
+function RoomStep18({ room }) {
+  const rows = [["a coin, one question", "half a disk"], ["light, every sheet angle", "the disk"], ["light, plus a delay", "the ball"], ["ℝ → ℂ", "rebit → qubit"]];
+  return (
+    <div>
+      <p>You have built a qubit. Not postulated — built, from bookkeeping and sunglasses.</p>
+      <div style={{ fontFamily: mono, fontSize: 12 }}>{rows.map((r, i) => <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: `1px solid ${C.gridBold}` }}><span>{r[0]}</span><strong style={{ color: C.gold }}>{r[1]}</strong></div>)}</div>
+      <p style={{ marginTop: 12 }}>Bernoulli ball = Poincaré ball = Bloch ball.</p>
+      <Notice>The four claims, redeemed: nature's rule is probabilistic · little quantities add, then square · a qubit lives anywhere on the surface · parallelism plus interference. Nothing today was taken on faith.</Notice>
+    </div>
+  );
+}
+
+// ── SCENE 19 : the room decoheres ──
+function RoomStep19({ room }) {
+  const key = "pf-noise-" + room.session;
+  const [noise, setNoise] = useState(() => { try { return JSON.parse(sessionStorage.getItem(key)) || {}; } catch (e) { return {}; } });
+  const lastReset = useRef(room.state.noiseReset || 0);
+  useEffect(() => { try { sessionStorage.setItem(key, JSON.stringify(noise)); } catch (e) {} room.send("noise", noise); }, [noise]);
+  useEffect(() => { const r = room.state.noiseReset || 0; if (r !== lastReset.current) { lastReset.current = r; setNoise({}); } }, [room.state.noiseReset]);
+  const view = room.state.view || { az: -35, el: 22 };
+  const th = room.state.theta ?? 45, de = room.state.delta ?? 0;
+  const pure = Room.stokes(th, de);
+  const minePt = typeof noise.delta === "number" ? Room.stokes(th, de + noise.delta) : null;
+  return (
+    <div>
+      <p>The presenter holds one pure beam. Each phone now bumps its delay by a random amount — the kind of thing a noisy room does to a qubit. Watch the room's average pointer shrink.</p>
+      <PhoneBall view={view} dots={minePt ? [{ sv: minePt, color: C.gold, mine: true, tag: room.tag }] : []} demo={pure} />
+      <div style={{ marginTop: 8 }}><Btn onClick={() => setNoise({ delta: Math.round(Math.random() * 360) })}>{typeof noise.delta === "number" ? `my noise: ${noise.delta}° — roll again` : "add my noise"}</Btn></div>
+      <Notice>Every phone's copy is still pure — on the surface. The average of the room is not. That is what happens to a qubit in a noisy room. Thank you for being the noise.</Notice>
+    </div>
+  );
+}
+
 const ROOM_STEPS = { 1: RoomStep1, 2: RoomStep2, 3: RoomStep3, 4: RoomStep4, 5: RoomStep5, 6: RoomStep6,
-  7: RoomStep7, 8: RoomStep8, 9: RoomStep9, 10: RoomStep10, 11: RoomStep11, 12: RoomStep12, 13: RoomStep13 };
+  7: RoomStep7, 8: RoomStep8, 9: RoomStep9, 10: RoomStep10, 11: RoomStep11, 12: RoomStep12, 13: RoomStep13,
+  14: RoomStep14, 15: RoomStep15, 16: RoomStep16, 17: RoomStep17, 18: RoomStep18, 19: RoomStep19 };
 
 function RoomApp() {
   const room = useParticipantSafe();
