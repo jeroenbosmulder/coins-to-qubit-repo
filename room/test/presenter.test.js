@@ -8,6 +8,7 @@ const window = dom.window;
 global.window = window; global.document = window.document; global.navigator = window.navigator; global.location = window.location;
 global.history = window.history; global.sessionStorage = window.sessionStorage; global.BroadcastChannel = BroadcastChannel; window.BroadcastChannel = BroadcastChannel;
 global.IS_REACT_ACT_ENVIRONMENT = true; global.confirm = () => false;
+global.requestAnimationFrame = window.requestAnimationFrame; global.cancelAnimationFrame = window.cancelAnimationFrame;
 const React = req('react'), ReactDOM = req('react-dom/client'), { act } = req('react');
 window.React = React; global.React = React;
 require('../relay-config.js'); require('../relay-transport.js'); require('../room.js');
@@ -17,7 +18,7 @@ const src = fs.readFileSync(path.join(__dirname, '..', '..', 'presentation', 'ro
 const code = babel.transformSync(src, { presets: [[req('@babel/preset-react'), { runtime: 'classic' }]], filename: 'room-figures.jsx', sourceType: 'script' }).code;
 const mod = { exports: {} };
 new Function('React', 'Room', 'window', 'document', 'location', 'navigator', 'module', 'confirm', code)(React, Room, window, document, location, navigator, mod, global.confirm);
-const { FigJoin, FigFlipRoom, FigBarsRoom, FigHalfPlaneRoom, FigArcRoom, FigNeedleRoom, FigLensRoom, FigPhotonRoom, FigSurveyRoom, FigMixRoom, FigQuestionRoom, FigProjectRoom, FigThreeLensRoom, FigDoubleRoom, FigTwinsRoom } = mod.exports;
+const { FigJoin, FigFlipRoom, FigBarsRoom, FigHalfPlaneRoom, FigArcRoom, FigNeedleRoom, FigLensRoom, FigPhotonRoom, FigSurveyRoom, FigMixRoom, FigQuestionRoom, FigProjectRoom, FigThreeLensRoom, FigDoubleRoom, FigTwinsRoom, FigShadowRoom, FigImpostorRoom, FigBallRoom, FigMZRoom, FigReceiptRoom, FigDecohereRoom } = mod.exports;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const byText = (re) => Array.from(document.querySelectorAll('button')).find((b) => re.test(b.textContent));
@@ -121,6 +122,33 @@ const click = async (el) => { await act(async () => { el.dispatchEvent(new windo
   await click(byText(/with the 45° question/)); await act(async () => { await sleep(120); });
   assert.strictEqual(a.get().state.fullDisk, true);
   assert(/negative bandwidth/.test(document.body.textContent), 'full disk view');
+
+  // ── Parts III–IV: an impostor joins (seat 13 would be θ45/δ90; simulate its tallies on phone c) ──
+  c.send('beam', { noise: 0, q: { '0': mk(50, 0.5), '45': mk(50, 0.5), 'C': mk(50, 1) } });
+  await act(async () => { await sleep(80); });
+  await act(async () => { root.render(React.createElement(FigShadowRoom)); await sleep(30); });
+  assert(/locked until the next scene/.test(document.body.textContent), 'shadow slider locked');
+  await act(async () => { root.render(React.createElement(FigImpostorRoom)); await sleep(30); });
+  assert(/pure — yet inside the disk/.test(document.body.textContent), 'impostor flagged');
+  await click(byText(/ask the delay question/)); await act(async () => { await sleep(120); });
+  assert.strictEqual(a.get().state.question, 'C'); assert.strictEqual(a.get().state.unlockDelay, true, 'delay question unlocks the clocks');
+  await click(byText(/^lift$/)); await act(async () => { await sleep(120); });
+  assert(/leave the plane/.test(document.body.textContent), 'lift view');
+  await act(async () => { root.render(React.createElement(FigBallRoom)); await sleep(30); });
+  assert(/Bernoulli ball/.test(document.body.textContent) && document.querySelectorAll('text').length > 3, 'ball renders with dots');
+  await act(async () => { root.render(React.createElement(FigMZRoom)); await sleep(30); });
+  await click(byText(/φ = 180°/)); await click(byText(/arm a new round/)); await act(async () => { await sleep(120); });
+  assert.strictEqual(a.get().state.armed, true); assert.strictEqual(a.get().state.mzRound, 1);
+  a.send('photon', { 1: { phi: 180, source: 'amplitudes', detector: 2, at: 1 } });
+  b.send('photon', { 1: { phi: 180, source: 'amplitudes', detector: 2, at: 2 } });
+  await act(async () => { await sleep(80); });
+  assert(/2 of 3 phones pressed/.test(document.body.textContent) && /fraction to D1 = 0\.00/.test(document.body.textContent), 'round aggregates');
+  await act(async () => { root.render(React.createElement(FigReceiptRoom)); await sleep(30); });
+  assert(/rebit → qubit/.test(document.body.textContent));
+  await act(async () => { root.render(React.createElement(FigDecohereRoom)); await sleep(30); });
+  a.send('noise', { delta: 90 }); b.send('noise', { delta: 270 });
+  await act(async () => { await sleep(80); });
+  assert(/2 phones have added noise/.test(document.body.textContent) && /length 0\.00/.test(document.body.textContent), 'opposite delays cancel: average pointer at the axis');
 
   console.log('presenter.test.js: all assertions passed');
   process.exit(0);

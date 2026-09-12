@@ -128,9 +128,32 @@ const click = async (el) => { await act(async () => { el.dispatchEvent(new windo
   await act(async () => { P.publish({ scene: 13, fullDisk: true }, true); await sleep(120); });
   assert(/The twins split/.test(document.body.textContent), 'scene 13 renders');
 
-  // a scene without a room step falls back to the tutorial step
-  await act(async () => { P.publish({ scene: 16 }, true); await sleep(120); });
-  assert(/SCENE 16/.test(document.body.textContent) && /not built yet/.test(document.body.textContent), 'fallback rendered');
+  // ── Parts III–IV ──
+  await act(async () => { P.publish({ scene: 14 }, true); await sleep(120); });
+  assert(/locked/.test(document.body.textContent), 'scene 14 clock slider locked');
+  await act(async () => { P.publish({ scene: 15, unlockDelay: true }, true); await sleep(120); });
+  await click(byText(/delay \+ sheet/)); await click(byText(/send 25/)); await click(byText(/send 25/));
+  await act(async () => { await sleep(150); });
+  bm = P.beams(); assert.strictEqual(bm[0].q['C'].n, 50, 'circular question tallied under C');
+  // seat 1: θ=10°, δ=0 → the delay question gives ≈ 50%
+  const fc = bm[0].q['C'].passed / 50; assert(fc > 0.25 && fc < 0.75, 'linear beam: delay question ≈ ½: ' + fc);
+  await act(async () => { P.publish({ scene: 16, view: { az: -35, el: 22 }, theta: 60, delta: 90 }, true); await sleep(120); });
+  assert(/demo beam follows the presenter/.test(document.body.textContent) && /60°/.test(document.body.textContent), 'scene 16 follows θ/δ');
+  await act(async () => { P.publish({ scene: 17, mzPhi: 180, mzSource: 'amplitudes', mzRound: 1, armed: true }, true); await sleep(120); });
+  assert(/be measured/.test(document.body.textContent), 'scene 17 armed button');
+  await click(byText(/be measured/)); await act(async () => { await sleep(150); });
+  let R = P.rounds(); assert.strictEqual(R[1].n, 1); assert.strictEqual(R[1].detector === undefined ? R[1].d1 : 0, 0, 'φ=180° → D2 with certainty');
+  assert(/flown/.test(document.body.textContent), 'one press per round');
+  await act(async () => { P.publish({ mzPhi: 0, mzRound: 2, armed: true }, true); await sleep(120); });
+  await click(byText(/be measured/)); await act(async () => { await sleep(150); });
+  R = P.rounds(); assert.strictEqual(R[2].d1, 1, 'φ=0° → D1 with certainty');
+  await act(async () => { P.publish({ scene: 18 }, true); await sleep(120); });
+  assert(/rebit → qubit/.test(document.body.textContent), 'scene 18 ladder');
+  await act(async () => { P.publish({ scene: 19, theta: 45, delta: 0 }, true); await sleep(120); });
+  await click(byText(/add my noise/)); await act(async () => { await sleep(150); });
+  assert.strictEqual(P.noises().length, 1, 'noise snapshot arrives');
+  await act(async () => { P.publish({ noiseReset: 1 }, true); await sleep(200); });
+  assert.strictEqual(P.noises().length, 0, 'noise reset clears');
 
   console.log('participant.test.js: all assertions passed');
   process.exit(0);
