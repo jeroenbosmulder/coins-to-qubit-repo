@@ -1,7 +1,8 @@
 # From Coins to a Qubit — Storyboard (presentation + tutorial)
 
-Working document, v0.4. Three sections: (A) review of the storyline, (B) the aha-moments, (C) the scene-by-scene storyboard with participation and reuse notes. Section (D) records the decisions taken so far.
+Working document, v0.5. Three sections: (A) review of the storyline, (B) the aha-moments, (C) the scene-by-scene storyboard with participation and reuse notes. Section (D) records the decisions taken so far.
 
+v0.5 (15 Sep): brings the storyboard in line with the built deck. Scene 0 restructured: the deck now opens with the six v2 slides (title, mechanics, two films, four claims, Act I divider); the separate join slide is gone — the cover carries a boarding pass (QR, session code, flight COI → BIT → QUB, live seated count, copy-link / new-code) and the Act I divider shows the live row of seated coins. Scene 2 split in two: 2a keeps the per-phone bars; 2b names the two kinds of uncertainty — statistical/aleatoric vs systematic/epistemic — with the bandwidth-split figure ("tell the bookkeeper whose flip is whose"). New aha 0b. Scene numbering otherwise unchanged.
 v0.4 (11 Sep): scene 1 has three rounds — fair coin, mystery coin (deterministic, face unknown), your own secret coin — which return in scenes 2 and 3, where the mystery coins sit in the corners and pool to the centre.
 v0.3 (10 Sep, after reading the v2 deck): adds the four-claims contract as an opening block and a badge thread; the finale is the Mach–Zehnder with crowd photons; the dictionary-and-receipt slide moves after it (S17 ↔ S18 swapped). Scenes otherwise unchanged.
 
@@ -48,6 +49,7 @@ In story order. Each one is a beat the reader should be *made to stop* at: slow 
 | # | Aha | The sentence |
 |---|-----|--------------|
 | 0 | Same prediction, different knowledge | "Both coins say 50%. They are not the same." |
+| 0b | Knowledge shrinks one bandwidth, not the other | "What learning removes was systematic (epistemic); what survives every fact is statistical (aleatoric)." |
 | 1 | The half disk appears by itself | "Pure beliefs on the rim, mixtures inside — we didn't design this, the second number did it." |
 | 2 | Opposite becomes perpendicular | "Seen from the state itself, always-H and always-T are not opposites; they are at right angles. First add, then square." |
 | 3 | Light has an H and a T | "After the first glass the light is *always-H*." |
@@ -88,22 +90,25 @@ With 15–20 people this allows three things a big room would not:
 
 All demos that were physical in v0.1 (sunglasses, three lenses, 3D glasses) are now on-screen simulations that run on the phone itself: draggable polarizers, a beam animation, a transmitted-intensity readout. Physical props can be added later without changing the storyboard.
 
-### Scene 0 — The contract (three presenter slides, before Part I)
+### Scene 0 — The contract (the deck's opening block, before Part I)
 
-**0a. Two films.** Cox (sixty seconds) and MIT (a few minutes). Say: "Listen for the claims." Reuse: v2 deck slides 3–4, tutorial `Step0Videos`.
-**0b. Four claims, taken on faith — until today.** The four badges appear, all grey. Say: "Nobody here will be asked to believe any of these. We build all four, starting from a coin." Reuse: v2 deck slide 5, `ClaimBadge`.
-**0c. How this works.** Phones join (QR), everyone sees scene 1, the rhythm per scene: I frame it, you play, we regroup on the surprise. The one rule: we never *add* anything quantum, we only refuse to throw details away. Reuse: v2 deck slide 2 (mechanics), plus the join step.
+**0a. Boarding (the cover).** No join slide of its own any more: the title slide carries a boarding pass — QR code, session code QB···, flight COI → BIT → QUB (Merritt Island → Baitadi → Ubari), departure showing the live date and time of the presentation, a live seated count, and copy-link / new-code controls inside the pass (connection state reads as the "operated in" line). The room boards while settling in. Reuse: `FigJoinQR` in room-figures.jsx (built).
+**0b. How the workshop works.** Rhythm per scene (I frame it, you play, we regroup on the surprise), the five acts, and the one rule: we never *add* anything quantum, we only refuse to throw details away. Reuse: v2 deck slide 2 (built, copied verbatim).
+**0c. Two films.** Cox (sixty seconds) and MIT (a few minutes). Say: "Listen for the claims." Reuse: v2 deck slides 3–4 (built), tutorial `Step0Videos`.
+**0d. Four claims, taken on faith — until today.** The four badges appear, all grey. Say: "Nobody here will be asked to believe any of these. We build all four, starting from a coin." Reuse: v2 deck slide 5 (built), `ClaimBadge`.
+**0e. Act I divider — the seated coins.** The divider closes the block with a small live row of every coin already in the room, captioned "the coins already in the room" — the first hint that the coin on *your* phone is yours alone. Reuse: `FigCoinsRow` in room-figures.jsx (built).
 
 ### Part I — Coins (scenes 1–6)
 
 **1. Three coins, one prediction**
-Screen: three coins, all labelled "50%". Hands, three rounds of ten flips: Round A — the same fair coin for everyone. Round B — a *mystery coin*: it always lands the same way, but which way nobody knows, not even its owner (no randomness in the coin at all, only in what we know). Round C — *your own* coin, with a secret bias. Pooled fraction on screen: all three → 0.5. Aha 0. Say: "Same forecast, three times. Do you believe the same thing?" Reuse: live coin-flip counter demo (already built); tutorial step 1.
+Screen: three coins, all labelled "50%". Hands, three rounds of ten flips: Round A — the same fair coin for everyone. Round B — a *mystery coin*: it always lands the same way, but which way nobody knows, not even its owner (no randomness in the coin at all, only in what we know). Round C — *your own* coin, with a secret bias. Pooled fraction on screen: all three → 0.5. Aha 0. Say: "Same forecast, three times. Do you believe the same thing?" Reuse: live coin-flip counter demo (built, `FigFlipRoom`); tutorial step 1.
 
-**2. Two sources of uncertainty**
-Screen: per-phone bars, three rows. Round A: everyone near 0.5. Round B: everyone at 0 or 1. Round C: bars all over the place. All three average 0.5. Say: "Round A: the coin is known, the throw is random — statistical. Round B: no throw at all, only ignorance — systematic in its purest form. Round C: both." Reuse: tutorial step 2, paper §1.
+**2. Two sources of uncertainty — and their names**
+**2a. The bars.** Screen: per-phone bars, three rows. Round A: everyone near 0.5. Round B: everyone at 0 or 1. Round C: bars all over the place. All three average 0.5. Say: "Round A: the coin is known, the throw is random — statistical. Round B: no throw at all, only ignorance — systematic in its purest form. Round C: both." Reuse: tutorial step 2, paper §1.
+**2b. Two words for not-knowing (new, built).** The bandwidth as the meter, before it becomes an axis. Screen: score each round's uncertainty as one anonymous bag of flips — all three rounds read the same wide bandwidth ≈ ½. Then press "tell the bookkeeper whose flip is whose": round A barely narrows (the luck is in the throw itself — statistical, *aleatoric*); round B collapses to zero (there was never any luck, only an unlearned fact — systematic, *epistemic*); round C narrows partway, to the mixed belief's bandwidth. Aha 0b. Say: "Whatever information removes was epistemic; whatever survives all information is aleatoric." Reuse: `FigSplitRoom` in room-figures.jsx (built, presenter-synced toggle; reuses the scene-1 tallies). Plants the bandwidth so scene 3 can turn it into an axis.
 
 **3. One number is not enough → the bandwidth**
-Screen: axis of p, then a second axis: expected spread. Round A pooled lands at (0.5, 0.5), on the rim. Round B's coins sit in the two corners (zero spread) and pooled land exactly at the centre — the state of no information. Round C pooled lands inside. Hands: your own coin's (p̂, σ̂) as a dot. Aha 1. Say: "We added one honest number and a shape appeared — with its rim, its centre and its inside." Reuse: tutorial step 3.
+Screen: axis of p, then a second axis: expected spread. Round A pooled lands at (0.5, 0.5), on the rim. Round B's coins sit in the two corners (zero spread) and pooled land exactly at the centre — the state of no information. Round C pooled lands inside. Hands: your own coin's (p̂, σ̂) as a dot. Aha 1. Say: "We added one honest number and a shape appeared — with its rim, its centre and its inside." Reuse: tutorial step 3; presenter figure `FigBlendRoom` (built: mixing beliefs, the half-disk of blends) for the mixtures-inside beat.
 
 **4. The Bernoulli circle**
 Screen: slider p; the pure-belief dot rides the arc; all phones' dots on the same arc. Hands: drag p on your phone (synced slider). Technical panel: σ = √(p(1−p)) ⇒ circle of radius ½. Say: "Every coin you fully know sits on the rim. Every coin you don't sits inside." Reuse: tutorial step 4 (first job).
@@ -118,13 +123,13 @@ Screen: the half disk, and two question marks. (i) Why *two* numbers — two num
 ### Part II — Linear light (scenes 7–13)
 
 **7. Two pairs of sunglasses**
-Screen: wave animation with H- and V-wiggles; a polarizer strips one. Hands (on-screen): two draggable sunglass lenses over a light source; rotate the second one and watch the brightness readout go to zero at 90°. Aha 3. Say: "After the first glass, the light is *always-H*. You just built a known coin out of light." Reuse: tutorial step 5.
+Screen: wave animation with H- and V-wiggles; a polarizer strips one. Hands (on-screen): two draggable sunglass lenses over a light source; rotate the second one and watch the brightness readout go to zero at 90°. Aha 3. Say: "After the first glass, the light is *always-H*. You just built a known coin out of light." Reuse: tutorial step 5; presenter figure `FigWaveRoom` (built: the wave three ways — animated wave in side, top and head-on views).
 
 **8. The polarizer is the coin toss**
 Screen: single photons arriving at a polarizer, pass/blocked ticks. Hands: your phone has a beam with a secret angle θ. Tap "measure with H" thirty times; your p̂ appears. Say: "Pass or block. Heads or tails." Reuse: tutorial step 6 (photon counter).
 
 **9. The half circle, in glass**
-Screen: every phone's (p̂, σ̂) dot — all on the rim. Overlay Malus's law cos²θ. Aha 4. Say: "We drew this circle from coins. Nature drew it from glass."
+Screen: every phone's (p̂, σ̂) dot — all on the rim. Overlay Malus's law cos²θ. The presenter figure carries a beam-tilt slider (0–180°, matching the needle angle) and a measure / show-participants toggle: "measure" previews where dots would land for a beam at that tilt; "show participants" switches to the room's live dots (built). Aha 4. Say: "We drew this circle from coins. Nature drew it from glass."
 Then, on its own slide: reveal each beam's secret angle θ next to its needle from scene 5. The beam's wiggle direction (a, b) = (cos θ, sin θ) *is* the needle (√p, √(1−p)). Hands: your beam animation and your needle, overlaid — they coincide. Aha 4b. Say: "The arrow we invented to keep the books is the direction the light actually wiggles in." Reuse: tutorial step 6 ("the deepest surprise"), step 7 (rim part).
 
 **10. Mixed light**
@@ -163,13 +168,20 @@ Screen: the presenter's pure state; every phone adds a random delay; the room's 
 
 ---
 
-## D. Decisions taken (from your answers, 10 Sep 2026)
+## D. Decisions taken
 
+From your answers, 10 Sep 2026:
 1. "Combination of both numbers doesn't identify uniquely" = two numbers don't capture everything about p. Kept as the planted doubt in scene 6.
 2. Compass needle = the centre-to-state pointer of the Bernoulli circle, seen from the state's frame (angle halved); it is the wave's polarization arrow (scene 9, aha 4b) and gets two clocks in Part III (scene 14).
 3. No physical props for now; every demo is an on-screen simulation on the participant's phone/laptop. Props can be layered on later.
 4. Uniqueness lemma included as the technical note "How far apart are two beliefs?" in scene 4, referenced in scenes 6 and 11.
 5. Audience 15–20: named dots, assigned (paired) secrets, one-photon-per-phone finale.
+
+From the build sessions, 12–15 Sep 2026:
+6. The deck opens with the six v2 slides verbatim (title, mechanics, two films, four claims, Act I divider); the join happens on the cover via the boarding pass (COI → BIT → QUB, live departure time, seated count, copy-link / new-code in-pass), and the old stand-alone join slide is dropped.
+7. Aleatoric/epistemic get their own named beat (scene 2b, aha 0b), demonstrated by the bandwidth split when the bookkeeper learns whose flip is whose — statistical uncertainty survives, systematic collapses, the secret coins land at the mixed belief's bandwidth.
+8. The seated coins appear as a row on the Act I divider so each participant notices their coin differs from their neighbour's.
+9. The scene-9 presenter figure carries a beam-tilt slider plus a measure / show-participants toggle (predicted dots at a chosen tilt vs the room's live dots).
 
 ## E. Suggested next step
 
