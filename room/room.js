@@ -10,6 +10,7 @@
  *
  * Published state (presenter → everyone) — only these keys are ever set:
  *   scene, round, question, resetToken, reveal, unlockDelay, armed, spotlight, pairs,
+ *   collect (the presenter's ▶ / ❙❙ — phones and bots only flip / fire while true; every slide change turns it off),
  *   roster: { [from]: { slot, tag } }
  * Secrets (bias, theta, delta, twin) are NOT on the wire: both sides derive
  * them from the slot with Room.secrets(slot).
@@ -101,7 +102,7 @@
   /* Mach–Zehnder: probability of detector 1 for path-length dial φ (deg); a mixture source ignores φ */
   function mzP1(phi, source) { if (source === 'mixture') return 0.5; var c = Math.cos((phi / 2) * DEG); return c * c; }
 
-  var TAGS = ['🦊','🐙','🦉','🐢','🦋','🐝','🐬','🦩','🐸','🦔','🐧','🦒','🐳','🦜','🐞','🦎','🐨','🦚','🐿️','🦭','🐌','🦀','🐇','🦓'];
+  var TAGS = ['€','$','£','¥','₹','₩','₺','₪','฿','₫','₴','₽','₦','₡','₲','₵','₭','₮','₸','₾','₼','֏','¢','ƒ'];
 
   // ─────────────────────────── helpers ───────────────────────────
   function newSession() {
@@ -144,7 +145,7 @@
 
     var store = makeStore({
       session: session, role: role, status: t.status,
-      state: (saved && saved.state) || { scene: 0, round: 'A', resetToken: 0, p: 0.5, question: 0, lens2: 90, mid: 45, view: { az: -35, el: 22 }, theta: 45, delta: 0, mzPhi: 0, mzSource: 'amplitudes', mzRound: 0, armed: false, roster: {} },
+      state: (saved && saved.state) || { scene: 0, round: 'A', resetToken: 0, p: 0.5, question: 0, lens1: 0, lens2: 90, sheetIn: true, waveView: "3D", lightMode: "wave", mid: 45, view: { az: -35, el: 22 }, theta: 45, delta: 0, mzPhi: 0, mzSource: 'amplitudes', mzRound: 0, armed: false, collect: false, roster: {} },
       phones: (saved && saved.phones) || {},
       memo: {},                                    // scratch for figures (histories etc.)
     });
@@ -179,6 +180,8 @@
         return;
       }
       if (m.type !== 'up') return;
+      if (forgotten[m.from] && m.name !== 'hello') return;
+      if (m.name === 'hello') delete forgotten[m.from];
       var cur = store.get(), phones = shallowMerge({}, cur.phones), ph = phones[m.from];
       if (m.name === 'hello') {
         var tag = (m.data && m.data.tag) || '?';
@@ -244,7 +247,7 @@
       el.addEventListener('slidechange', function (ev) {
         var d = ev.detail || {}, s = d.slide, ds = s && s.dataset;
         if (!ds) return;
-        var patch = {};
+        var patch = { collect: false };                       // every slide opens paused: nothing is collected until ▶
         if (ds.scene !== undefined && !isNaN(Number(ds.scene))) patch.scene = Number(ds.scene);
         Object.keys(ds).forEach(function (k) {
           if (k.length > 2 && k.slice(0, 2) === 'pf') {
@@ -252,7 +255,7 @@
             patch[key] = (v !== '' && !isNaN(Number(v))) ? Number(v) : v;
           }
         });
-        if (Object.keys(patch).length) publish(patch, true);
+        publish(patch, true);
       });
     }
 
@@ -294,6 +297,23 @@
       Object.keys(ph).forEach(function (f) { var d = ph[f].up && ph[f].up.noise; if (d && typeof d.delta === 'number') out.push({ slot: ph[f].slot, tag: ph[f].tag, delta: d.delta }); });
       return out;
     }
+    /* forget a set of phones entirely (used when the SIM bots stop): their tallies, photons, noise, roster entries and the
+       per-round histories they contributed to; then republish roster + aggregates so every slide and mirror clears too */
+    var forgotten = {};
+    function forgetPhones(pred) {
+      var cur = store.get(), phones = {}, gone = [];
+      Object.keys(cur.phones).forEach(function (f) { if (pred(f, cur.phones[f])) forgotten[f] = true; });
+      Object.keys(cur.phones).forEach(function (f) { if (pred(f, cur.phones[f])) gone.push(f); else phones[f] = cur.phones[f]; });
+      if (!gone.length) { if (aggTimer) { clearTimeout(aggTimer); aggTimer = null; } return; }
+      if (aggTimer) { clearTimeout(aggTimer); aggTimer = null; }
+      var roster = shallowMerge({}, cur.state.roster || {});
+      gone.forEach(function (f) { delete roster[f]; });
+      var memo = shallowMerge(cur.memo);
+      ['A', 'B', 'C'].forEach(function (rd) { delete memo['hist:' + rd]; delete memo['phist:' + rd]; });
+      store.set(shallowMerge(cur, { phones: phones, memo: memo }));
+      persist();
+      publish({ roster: roster, agg: computeAgg() }, true);
+    }
     function resetRound(round) {
       var cur = store.get(), phones = {};
       Object.keys(cur.phones).forEach(function (f) {
@@ -301,9 +321,30 @@
         if (up.tally) { up.tally = shallowMerge(up.tally); delete up.tally[round]; }
         phones[f] = shallowMerge(p, { up: up });
       });
-      var memo = shallowMerge(cur.memo); delete memo['hist:' + round];
+      var memo = shallowMerge(cur.memo); delete memo['hist:' + round]; delete memo['phist:' + round];
       store.set(shallowMerge(cur, { phones: phones, memo: memo }));
       publish({ resetToken: (cur.state.resetToken || 0) + 1, round: round }, true);
+      scheduleAgg();
+    }
+    /* light rounds: lround snapshot per phone = { A:{ "0":{n,passed}, … }, B:{…}, C:{…} } — the three coins replayed with photons */
+    function lightRound(round, angle) {
+      var ph = store.get().phones, out = [], N = 0, P = 0, a = String(angle);
+      Object.keys(ph).forEach(function (f) {
+        var d = ph[f].up && ph[f].up.lround && ph[f].up.lround[round] && ph[f].up.lround[round][a];
+        if (d && d.n > 0) { out.push({ from: f, tag: ph[f].tag, slot: ph[f].slot, n: d.n, passed: d.passed, frac: d.passed / d.n }); N += d.n; P += d.passed; }
+      });
+      out.sort(function (x, y) { return x.slot - y.slot; });
+      return { phones: out, n: N, passed: P, frac: N ? P / N : null };
+    }
+    function resetLightRound(round) {
+      var cur = store.get(), phones = {};
+      Object.keys(cur.phones).forEach(function (f) {
+        var p = cur.phones[f], up = shallowMerge(p.up || {});
+        if (up.lround) { up.lround = shallowMerge(up.lround); delete up.lround[round]; }
+        phones[f] = shallowMerge(p, { up: up });
+      });
+      store.set(shallowMerge(cur, { phones: phones }));
+      publish({ lresetToken: (cur.state.lresetToken || 0) + 1, lround: round }, true);
       scheduleAgg();
     }
     function setMemo(k, v) { store.update(function (c) { var m = shallowMerge(c.memo); m[k] = v; return shallowMerge(c, { memo: m }); }); }
@@ -311,7 +352,7 @@
     var api = {
       session: session, role: role, transport: t,
       get: store.get, subscribe: store.subscribe,
-      publish: publish, bindDeck: bindDeck, tallies: tallies, beams: beams, rounds: rounds, noises: noises, resetRound: resetRound, setMemo: setMemo,
+      publish: publish, bindDeck: bindDeck, tallies: tallies, beams: beams, rounds: rounds, noises: noises, resetRound: resetRound, forgetPhones: forgetPhones, setMemo: setMemo, lightRound: lightRound, resetLightRound: resetLightRound,
       participantUrl: function () { return participantUrl(session); },
       close: function () { t.removeEventListener('message', onMessage); if (!opts.transport) t.close(); },
     };
@@ -329,7 +370,7 @@
     var store = makeStore({
       session: session, status: t.status, from: t.clientId,
       tag: (saved && saved.tag) || null, joined: !!(saved && saved.tag),
-      state: { scene: 0, round: 'A', resetToken: 0, p: 0.5, question: 0, lens2: 90, mid: 45, view: { az: -35, el: 22 }, theta: 45, delta: 0, mzPhi: 0, mzSource: 'amplitudes', mzRound: 0, armed: false, roster: {} },
+      state: { scene: 0, round: 'A', resetToken: 0, p: 0.5, question: 0, lens1: 0, lens2: 90, sheetIn: true, waveView: "3D", lightMode: "wave", mid: 45, view: { az: -35, el: 22 }, theta: 45, delta: 0, mzPhi: 0, mzSource: 'amplitudes', mzRound: 0, armed: false, roster: {} },
       me: null,                                     // { slot, tag, bias, theta, delta, twin }
       snapshots: (saved && saved.snapshots) || {},  // last sent per name (re-sent on reconnect)
     });
@@ -390,7 +431,7 @@
     var R = global.React;
     return R.useSyncExternalStore(s.subscribe, s.get, s.get);
   }
-  function usePresenter() { var p = presenter(); var snap = useStore(p); return shallowMerge(snap, { transport: p.transport, publish: p.publish, tallies: p.tallies, beams: p.beams, rounds: p.rounds, noises: p.noises, resetRound: p.resetRound, setMemo: p.setMemo, participantUrl: p.participantUrl }); }
+  function usePresenter() { var p = presenter(); var snap = useStore(p); return shallowMerge(snap, { transport: p.transport, publish: p.publish, tallies: p.tallies, beams: p.beams, rounds: p.rounds, noises: p.noises, resetRound: p.resetRound, setMemo: p.setMemo, lightRound: p.lightRound, resetLightRound: p.resetLightRound, participantUrl: p.participantUrl }); }
   function useParticipant() {
     var p = participant();
     var R = global.React;

@@ -9,14 +9,14 @@
  *   rounds A/B/C  → flips 10 coins (fair / secret face / secret bias), staggered
  *   resetToken    → clears that round and re-flips
  *   scene ≥ 8     → sends 25 photons through the current question sheet
- *   scene ≥ 16    → also answers 0°, 45° and the delay question (fills the ball)
+ *   scene ≥ 16    → also answers 0° and 45°; the undo test ('C': second glass, then the 45° sheet) once the presenter asks it
  *   armed round   → presses "be measured" once (Mach–Zehnder click)
  *   scene 19      → adds its random noise; follows noiseReset
  */
-(function () {
+(function init() {
   'use strict';
   if (typeof window === 'undefined' || window.__pfSimulate) return;
-  if (!window.Room || !window.RoomTransport) return;
+  if (!window.Room || !window.RoomTransport) { setTimeout(init, 150); return; }   // bundled: siblings may land later
   if (Room.isMirrorUrl && Room.isMirrorUrl()) return;   // mirror window: no UI, no bots
   window.__pfSimulate = true;
 
@@ -38,6 +38,7 @@
     var photons = {};
     var myNoise = {};
     var lastToken = null, lastNoiseReset = null, busy = {};
+    var lr = { A: {}, B: {}, C: {} }, lastLToken = null;
 
     p.join(Room.TAGS[i % Room.TAGS.length]);
 
@@ -57,7 +58,7 @@
       busy['flip' + round] = true;
       var step = function () {
         var st = p.get().state;
-        if (st.round !== round || flips[round].length >= 10) { busy['flip' + round] = false; return; }
+        if (!st.collect || st.round !== round || flips[round].length >= 10) { busy['flip' + round] = false; return; }
         flips[round].push(Math.random() < prob ? 1 : 0);
         var o = {};
         ['A', 'B', 'C'].forEach(function (r) { o[r] = { n: flips[r].length, heads: flips[r].reduce(function (a, v) { return a + v; }, 0) }; });
@@ -80,18 +81,42 @@
         busy[k] = false;
       }, rand(400, 3000) * pace);
     }
+    /* light rounds: A = everyone at 45°, B = H or V by seat parity (unknown to the owner), C = the secret angle */
+    function fireLight(round, alpha) {
+      var m = me(); if (!m) return;
+      var aBeam = function () { var v = Number(p.get().state.abeam); return [30, 45, 60, 90].indexOf(v) >= 0 ? v : 45; };
+      var beta = round === 'A' ? aBeam() : round === 'B' ? (m.face ? 0 : 90) : m.theta, delta = round === 'C' ? m.delta : 0;
+      var ak = round === 'A' && beta !== 45 ? alpha + '@' + beta : String(alpha);
+      var k = 'lr' + round + ak, cur = lr[round][ak] || { n: 0, passed: 0 };
+      if (cur.n >= 20 || busy[k]) return;
+      busy[k] = true;
+      var step = function () {
+        var st = p.get().state, c2 = lr[round][ak] || { n: 0, passed: 0 };
+        var q = st.question === undefined || st.question === null ? 0 : st.question;
+        if (!st.collect || st.lround !== round || q !== alpha || c2.n >= 20 || (round === 'A' && aBeam() !== beta)) { busy[k] = false; return; }
+        lr[round][ak] = { n: c2.n + 1, passed: c2.passed + Room.photon(beta, alpha, 0, delta) };
+        p.send('lround', lr);
+        later(step, rand(250, 850) * pace);
+      };
+      later(step, rand(200, 2200) * pace);
+    }
     function react() {
       var st = p.get().state;
       // reset → clear that round, re-flip
       if (lastToken === null) lastToken = st.resetToken || 0;
       if ((st.resetToken || 0) !== lastToken) { lastToken = st.resetToken || 0; flips[st.round] = []; }
+      if (!st.collect) return;                                   // the presenter's ▶ opens collection; ❙❙ (and every slide change) closes it
       if ((st.scene || 0) >= 1 && (st.scene || 0) <= 7) flipRound(st.round || 'A');
       // light: answer the current question, and the three ball questions late in the show
       if ((st.scene || 0) >= 8) {
         var q = st.question; if (q === undefined || q === null) q = 0;
         answer(q, 25);
       }
-      if ((st.scene || 0) >= 16) { answer(0, 25); answer(45, 25); answer('C', 25); }
+      if ((st.scene || 0) >= 16) { answer(0, 25); answer(45, 25); if (st.question === 'C' || (st.scene || 0) > 16) answer('C', 25); }
+      // the three coins, in light
+      if (lastLToken === null) lastLToken = st.lresetToken || 0;
+      if ((st.lresetToken || 0) !== lastLToken) { lastLToken = st.lresetToken || 0; if (st.lround) lr[st.lround] = {}; }
+      if ((st.scene || 0) >= 8 && ['A', 'B', 'C'].indexOf(st.lround) >= 0) fireLight(st.lround, st.question === undefined || st.question === null ? 0 : st.question);
       // one photon at a time
       var rid = st.mzRound || 0;
       if (st.armed && !photons[rid] && !busy.mz) {
@@ -127,6 +152,9 @@
   }
   function stopAll() {
     bots.forEach(function (b) { b.close(); }); bots = [];
+    // and wipe what they produced: coins on the join slide, flips, histories, photons, noise
+    var wipe = function () { try { var pr = Room.presenter && Room.presenter(); if (pr && pr.forgetPhones) pr.forgetPhones(function (from) { return /^sim-/.test(from); }); } catch (e) {} };
+    wipe(); setTimeout(wipe, 600); setTimeout(wipe, 2000);   // sweep stragglers whose last message was still in flight
     try { sessionStorage.removeItem(KEY); } catch (e) {}
     render();
   }
@@ -155,7 +183,7 @@
       box.appendChild(btn('+12 participants', 'Simulate 12 participants (local only — real participants can still join)', function () { spawn(12); }));
     } else {
       box.appendChild(btn('+4', 'Add 4 more bots', function () { spawn(4); }));
-      var x = btn('stop', 'Disconnect all bots (their last answers stay on the slides; start a new session code for a clean room)', stopAll);
+      var x = btn('stop', 'Disconnect all bots and clear everything they contributed', stopAll);
       x.style.borderColor = '#E81932'; x.style.color = '#E81932';
       box.appendChild(x);
     }
