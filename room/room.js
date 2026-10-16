@@ -347,7 +347,11 @@
       publish({ lresetToken: (cur.state.lresetToken || 0) + 1, lround: round }, true);
       scheduleAgg();
     }
-    function setMemo(k, v) { store.update(function (c) { var m = shallowMerge(c.memo); m[k] = v; return shallowMerge(c, { memo: m }); }); }
+    // a mirror window never builds its own memo: it receives the presenter's (presenter-kit passes force)
+    function setMemo(k, v, force) {
+      if (role === 'mirror' && !force) return;
+      store.update(function (c) { var m = shallowMerge(c.memo); if (v === undefined) delete m[k]; else m[k] = v; return shallowMerge(c, { memo: m }); });
+    }
 
     var api = {
       session: session, role: role, transport: t,
