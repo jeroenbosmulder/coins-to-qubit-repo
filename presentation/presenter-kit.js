@@ -19,7 +19,13 @@
      hook instances are identified by their setter (stable in React) and numbered in
      first-seen order, which matches across two windows running the same page. */
   var registry = {}, ids = typeof WeakMap === 'function' ? new WeakMap() : null,
-      pending = {}, lastJson = {}, cache = {}, nextId = 0;
+      pending = {}, lastJson = {}, cache = {}, vals = {}, nextId = 0;
+  function kind(v) { return v === null ? 'null' : Array.isArray(v) ? 'array' : typeof v; }
+  function applyJson(id, json) {
+    var nv; try { nv = JSON.parse(json); } catch (err) { return; }
+    if (id in vals && kind(vals[id]) !== kind(nv)) return;   // hook order drifted between windows — never force a wrong-typed value
+    try { registry[id](nv); } catch (err) {}
+  }
   function patchReact(R) {
     if (!R || !R.useState || R.__pkPatched || !ids) return;
     R.__pkPatched = true;
@@ -30,10 +36,11 @@
       if (id === undefined) {
         id = nextId++; ids.set(set, id); registry[id] = set;
         if (isMirror && pending[id] !== undefined) {
-          (function (pv) { setTimeout(function () { try { set(JSON.parse(pv)); } catch (err) {} }, 0); })(pending[id]);
+          (function (pid, pv) { setTimeout(function () { applyJson(pid, pv); }, 0); })(id, pending[id]);
           delete pending[id];
         }
       }
+      vals[id] = pair[0];
       if (!isMirror) {
         var json;
         try { json = JSON.stringify(pair[0]); } catch (err) { json = undefined; }
@@ -62,7 +69,7 @@
     bc.addEventListener('message', function (e) {
       var d = e.data || {};
       if (d.pkState !== undefined) {
-        if (registry[d.pkState]) { try { registry[d.pkState](JSON.parse(d.json)); } catch (err) {} }
+        if (registry[d.pkState]) applyJson(d.pkState, d.json);
         else pending[d.pkState] = d.json;
       }
       if (typeof d.index === 'number') { var s = stage(); if (s && s.goTo) s.goTo(d.index); }
@@ -141,7 +148,7 @@
     left.textContent = leftTxt;
     var right = document.createElement('span');
     right.textContent = rightTxt;
-    right.style.color = '#5C6E8F';
+    right.style.color = '#5E6A85';
     head.appendChild(left); head.appendChild(right);
   }
   function applyOpen() {
