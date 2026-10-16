@@ -53,6 +53,17 @@
     };
   }
   if (window.React) patchReact(window.React);
+  else {
+    // patch the moment React lands, before any module can capture `const { useState } = React`
+    var _R;
+    try {
+      Object.defineProperty(window, 'React', {
+        configurable: true, enumerable: true,
+        get: function () { return _R; },
+        set: function (v) { _R = v; patchReact(v); },
+      });
+    } catch (err) {}
+  }
   var pkPoll = setInterval(function () {
     if (window.React && !window.React.__pkPatched) patchReact(window.React);
   }, 100);
@@ -60,19 +71,31 @@
   /* ── room memo sync (figure histories kept in the Room store, outside React state) ──
      presenter: every memo key is broadcast when it changes; mirror: applied with force. */
   var roomStore = function () { return window.Room && window.Room.presenter ? window.Room.presenter() : null; };
-  var memoLast = {}, memoPending = {}, memoT = null;
+  var memoLast = {}, stateLast = {}, memoPending = {}, memoT = null;
   function pushMemo(all) {
     var p = roomStore(); if (!p) return;
-    var m = p.get().memo || {};
+    var cur = p.get(), m = cur.memo || {}, st = cur.state || {};
     Object.keys(m).forEach(function (k) {
       var j; try { j = JSON.stringify(m[k]); } catch (err) { return; }
       if (j === undefined) return;
       if (all || j !== memoLast[k]) { memoLast[k] = j; bc.postMessage({ pkMemo: k, json: j }); }
     });
     Object.keys(memoLast).forEach(function (k) { if (!(k in m)) { delete memoLast[k]; bc.postMessage({ pkMemo: k, del: true }); } });
+    // the presenter's published room state (collect, round, scene …) goes over the same channel: immediate, no relay hop
+    Object.keys(st).forEach(function (k) {
+      var j; try { j = JSON.stringify(st[k]); } catch (err) { return; }
+      if (j === undefined) return;
+      if (all || j !== stateLast[k]) { stateLast[k] = j; bc.postMessage({ pkRoom: k, json: j }); }
+    });
   }
   function applyMemo(k, d) {
     var p = roomStore(); if (!p) { memoPending[k] = d; return; }
+    if (d.pkRoom !== undefined) {
+      var sv; try { sv = JSON.parse(d.json); } catch (err) { return; }
+      var patch = {}; patch[k] = sv;
+      if (p.applyState) p.applyState(patch);
+      return;
+    }
     if (d.del) return void p.setMemo(k, undefined, true);
     var v; try { v = JSON.parse(d.json); } catch (err) { return; }
     p.setMemo(k, v, true);
@@ -101,6 +124,7 @@
         else pending[d.pkState] = d.json;
       }
       if (typeof d.pkMemo === 'string') applyMemo(d.pkMemo, d);
+      if (typeof d.pkRoom === 'string') applyMemo(d.pkRoom, d);
       if (typeof d.index === 'number') { var s = stage(); if (s && s.goTo) s.goTo(d.index); }
       if (typeof d.scroll === 'number') window.scrollTo(0, d.scroll);
     });

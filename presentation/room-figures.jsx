@@ -2725,6 +2725,10 @@ function useReplay(ready, enter, deps, onArm, D = 2200) {
     return () => cancelAnimationFrame(raf.current);
   }, [playing, arm]);
   useEffect(() => { const p = Room.presenter && Room.presenter(); if (p && p.publish) p.publish({ collect: playing }, true); }, [playing]);
+  // mirror window (P): follows the presenter's ▶ / ❙❙ through state.collect (one-way); its own button still works locally
+  const room = Room.usePresenter();
+  const isMirror = room.role === "mirror", collect = !!room.state.collect;
+  useEffect(() => { if (isMirror) setPlaying(collect); }, [isMirror, collect]);
   const rev = !ready ? 1 : u < 1 ? u * u * (3 - 2 * u) : 1;
   return { rev, playing, toggle: () => setPlaying((p) => !p) };
 }
