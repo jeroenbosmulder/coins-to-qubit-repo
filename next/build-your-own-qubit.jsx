@@ -6,13 +6,13 @@ const C = {
   grid: "#E1F3FC",
   gridBold: "#AFE0F7",
   ink: "#002157",
-  inkSoft: "#5C6E8F",
-  gold: "#EE7203",
-  goldSoft: "#FDE9D3",
-  red: "#F71D25",
-  redSoft: "#FDE0E1",
-  teal: "#00A1E4",
-  violet: "#5F3DC4",
+  inkSoft: "#5E6A85",
+  gold: "#E37222",
+  goldSoft: "#FBE7D8",
+  red: "#E81932",
+  redSoft: "#FBE1E4",
+  teal: "#00A1DE",
+  violet: "#7B2D8B",
 };
 
 const serif = "'Fraunces', Georgia, 'Times New Roman', serif";
@@ -72,12 +72,13 @@ function Btn({ children, onClick, kind = "solid", disabled }) {
       style={{
         fontFamily: mono,
         fontSize: 13,
-        padding: "8px 14px",
-        borderRadius: 6,
+        fontWeight: 600,
+        padding: "8px 16px",
+        borderRadius: 999,
         cursor: disabled ? "default" : "pointer",
-        border: `1.5px solid ${C.ink}`,
-        background: solid ? C.ink : "transparent",
-        color: solid ? C.paper : C.ink,
+        border: `1.5px solid ${solid ? C.gold : C.gridBold}`,
+        background: solid ? C.gold : "#FFFFFF",
+        color: solid ? "#FFFFFF" : C.ink,
         opacity: disabled ? 0.4 : 1,
       }}
     >
@@ -91,9 +92,10 @@ function Notice({ children }) {
     <div
       style={{
         marginTop: 16,
-        padding: "10px 14px",
-        borderLeft: `3px solid ${C.gold}`,
-        background: "#FFF4E8",
+        padding: "12px 16px",
+        border: "1px solid #F2CFB2",
+        borderRadius: 10,
+        background: "#FDF4EC",
         fontSize: 14,
         lineHeight: 1.55,
       }}
@@ -3449,15 +3451,8 @@ const ROOM = { title: "The evidence room", comp: StepEvidenceRoom, label: "ADDIT
 const useParticipantSafe = () => (typeof Room !== "undefined" && Room.useParticipant ? Room.useParticipant() : null);
 const roomSession = () => (typeof Room !== "undefined" && Room.sessionFromUrl ? Room.sessionFromUrl() : null);
 
-// scene → index into STEPS (fallback while room steps are built slice by slice)
+// scene → index into STEPS (last-resort fallback when a slide has neither a room view nor a scene view)
 const SCENE_TO_STEP = { 0: 1, 1: 2, 2: 3, 3: 4, 4: 5, 5: 5, 6: 6, 7: 7, 8: 7, 9: 7, 10: 8, 11: 10, 12: 12, 13: 9, 14: 13, 15: 13, 16: 14, 17: 16, 18: 17, 19: 14 };
-const SCENE_TITLES = {
-  0: "How this works", 1: "Two coins, one prediction", 2: "Two sources of uncertainty", 3: "One number is not enough",
-  4: "The Bernoulli circle", 5: "From the state's own point of view", 6: "Two doubts", 7: "Two pairs of sunglasses",
-  8: "The polarizer is the coin toss", 9: "The half circle, in glass", 10: "Mixed light", 11: "Ask a different question",
-  12: "Angle doubling", 13: "The twins split", 14: "The shadow", 15: "The impostor", 16: "The ball",
-  17: "One photon at a time", 18: "The dictionary and the receipt", 19: "The room decoheres",
-};
 
 function RoomStatus({ status }) {
   const col = status === "connected" ? C.teal : status === "error" ? C.red : status === "connecting" ? C.gold : C.inkSoft;
@@ -3467,14 +3462,15 @@ function RoomStatus({ status }) {
 
 function RoomJoin({ room }) {
   const [tag, setTag] = useState(null);
-  const tags = (typeof Room !== "undefined" && Room.TAGS) || ["🦊", "🐙", "🦉", "🐢"];
+  const tags = (typeof Room !== "undefined" && Room.TAGS) || ["€", "$", "£", "¥"];
   return (
     <div>
-      <p>You are joining session <strong style={{ fontFamily: mono, letterSpacing: 2 }}>{room.session}</strong>. Pick a name — it is how your dot appears on the big screen.</p>
+      <p>You are joining session <strong style={{ fontFamily: mono, letterSpacing: 2 }}>{room.session}</strong>. Pick a coin — it is how your dot appears on the big screen.</p>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, margin: "14px 0" }}>
         {tags.map((t) => (
           <button key={t} onClick={() => setTag(t)} style={{
-            width: 48, height: 48, fontSize: 26, borderRadius: 10, cursor: "pointer",
+            width: 48, height: 48, fontSize: 22, borderRadius: "50%", cursor: "pointer",
+            fontFamily: serif, fontWeight: 600, color: C.ink,
             border: `2px solid ${tag === t ? C.gold : C.gridBold}`, background: tag === t ? C.goldSoft : "#fff",
           }}>{t}</button>
         ))}
@@ -3520,8 +3516,9 @@ function RoomStep1({ room }) {
   const seq = flips[round] || [];
   const roundCol = round === "A" ? C.teal : round === "B" ? C.violet : C.gold;
   const nH = seq.filter((v) => v).length;
+  const closed = !room.state.collect;                 // the presenter's ▶ opens the round
   const flip = () => {
-    if (p === null) return;
+    if (p === null || closed) return;
     setFlips((f) => ({ ...f, [round]: [...f[round], flipOne(p)] }));
   };
 
@@ -3549,15 +3546,16 @@ function RoomStep1({ room }) {
         </div>
       )}
       <div style={{ display: "flex", alignItems: "center", gap: 14, margin: "14px 0" }}>
-        <button onClick={flip} disabled={p === null} style={{
-          width: 96, height: 96, borderRadius: "50%", cursor: p === null ? "default" : "pointer", fontFamily: mono, fontWeight: 700, fontSize: 18,
-          color: "#fff", border: `3px solid ${C.ink}`, opacity: p === null ? 0.4 : 1,
+        <button onClick={flip} disabled={p === null || closed} style={{
+          width: 96, height: 96, borderRadius: "50%", cursor: p === null || closed ? "default" : "pointer", fontFamily: mono, fontWeight: 700, fontSize: 18,
+          color: "#fff", border: `3px solid ${C.ink}`, opacity: p === null || closed ? 0.4 : 1,
           background: `radial-gradient(circle at 35% 30%, #FFAE5E, ${roundCol})`,
         }}>Flip</button>
         <div>
           <div style={{ fontFamily: mono, fontSize: 12, color: C.inkSoft }}>{`round ${round} · ${seq.length} flips`}</div>
           <div style={{ fontFamily: mono, fontSize: 22, fontWeight: 600 }}>{seq.length ? `${nH} heads · ${(nH / seq.length).toFixed(2)}` : "—"}</div>
           {p === null && <div style={{ fontFamily: mono, fontSize: 11, color: C.red }}>waiting for your seat number…</div>}
+          {p !== null && closed && <div style={{ fontFamily: mono, fontSize: 11, color: C.red }}>waiting for the presenter to press ▶</div>}
           {seq.length >= 10 && <div style={{ fontFamily: mono, fontSize: 11, color: C.teal }}>ten done ✓ — look at the big screen</div>}
         </div>
       </div>
@@ -3591,8 +3589,8 @@ function RoomSlider({ room, own, setOwn, label }) {
   );
 }
 
-// ── SCENE 2 : two sources of uncertainty ──
-function RoomStep2({ room }) {
+// ── SCENE 2 : two sources of uncertainty (and 2b: the two words, with your own bandwidth per round) ──
+function RoomStep2({ room, words }) {
   const W = 340, x0 = 30, x1 = 310, X = (f) => x0 + f * (x1 - x0);
   const COL = { A: C.teal, B: C.violet, C: C.gold };
   const NAME = { A: "A · fair coin", B: "B · mystery coin", C: "C · secret coin" };
@@ -3621,7 +3619,18 @@ function RoomStep2({ room }) {
         <text x={X(0.5)} y={270} textAnchor="middle" fontFamily={mono} fontSize="10" fill={C.inkSoft}>½</text>
         <text x={x1} y={270} textAnchor="end" fontFamily={mono} fontSize="10" fill={C.inkSoft}>1</text>
       </svg>
-      <Notice>Your dot is the marked one; the faded dots are the rest of the room. Round A huddles around ½: the coin is known, only luck differs — <em>statistical</em>. Round B sits at the two ends: no luck at all, pure ignorance — <em>systematic</em>. Round C is both. The room average cannot tell any of them apart.</Notice>
+      {words && (
+        <div style={{ fontFamily: mono, fontSize: 12, marginTop: 10 }}>
+          {["A", "B", "C"].map((r) => { const me = myAgg(room, r); const p = me && me.n ? me.heads / me.n : null; return (
+            <div key={r} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: `1px solid ${C.gridBold}` }}>
+              <span style={{ color: COL[r], fontWeight: 600 }}>{NAME[r]}</span>
+              <span>{p === null ? "no flips" : `${me.heads}/${me.n} · p ${p.toFixed(2)} · bandwidth ${sigOf(p).toFixed(2)}`}</span>
+            </div>); })}
+        </div>
+      )}
+      {words
+        ? <Notice>Two words. <em>Aleatoric</em>: the spread that stays even when you know the coin, the luck of the throw. <em>Epistemic</em>: the spread that vanishes once you learn whose coin is whose. Your rows above are your own bandwidths; the room's ± sd pools everyone as one bag, its ± E(sd) averages rows like yours.</Notice>
+        : <Notice>Your dot is the marked one; the faded dots are the rest of the room. Round A huddles around ½: the coin is known, only luck differs — <em>statistical</em>. Round B sits at the two ends: no luck at all, pure ignorance — <em>systematic</em>. Round C is both. The room average cannot tell any of them apart.</Notice>}
     </div>
   );
 }
@@ -3741,14 +3750,15 @@ function useBeam(room) {
   return { beam, theta, delta, addResults, setNoise, reset };
 }
 
-function PhotonBench({ angle, tally, onOne, onMany, disabled, log }) {
+function PhotonBench({ angle, tally, onOne, onMany, disabled, closed, log, manyLabel = "send 25", glass }) {
   const f = tally && tally.n ? tally.passed / tally.n : null;
   return (
     <div>
       <svg viewBox="0 0 340 110" style={{ width: "100%", background: "#fff", border: `1.5px solid ${C.gridBold}`, borderRadius: 8, display: "block" }}>
-        <circle cx={30} cy={50} r="13" fill="#FFF4E8" stroke={C.gold} strokeWidth="2" />
+        <circle cx={30} cy={50} r="13" fill="#FDF4EC" stroke={C.gold} strokeWidth="2" />
         <text x={30} y={82} textAnchor="middle" fontFamily={mono} fontSize="9" fill={C.inkSoft}>your beam</text>
         <line x1={45} y1={50} x2={250} y2={50} stroke={C.gridBold} strokeWidth="4" />
+        {glass && <g><path d="M 92 28 L 122 28 L 112 72 L 82 72 Z" fill="#EAF3FA" stroke={C.ink} strokeWidth="1.5" /><text x={102} y={86} textAnchor="middle" fontFamily={mono} fontSize="9" fill={C.inkSoft}>glass</text></g>}
         <PhoneSheet x={150} y={50} a={angle} label={`${angle}° sheet`} />
         <rect x={255} y={35} width={40} height={30} rx="5" fill="#fff" stroke={C.ink} strokeWidth="1.5" />
         <text x={275} y={54} textAnchor="middle" fontFamily={mono} fontSize="9" fill={C.ink}>click?</text>
@@ -3756,9 +3766,10 @@ function PhotonBench({ angle, tally, onOne, onMany, disabled, log }) {
         <text x={330} y={100} textAnchor="end" fontFamily={mono} fontSize="11" fontWeight="600" fill={C.ink}>{tally && tally.n ? `${tally.passed} of ${tally.n} passed · ${f.toFixed(2)}` : "no photons yet"}</text>
       </svg>
       <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-        <Btn onClick={onOne} disabled={disabled}>send 1 photon</Btn>
-        <Btn onClick={onMany} disabled={disabled} kind="ghost">send 25</Btn>
+        <Btn onClick={onOne} disabled={disabled || closed}>send 1 photon</Btn>
+        <Btn onClick={onMany} disabled={disabled || closed} kind="ghost">{manyLabel}</Btn>
       </div>
+      {closed && !disabled && <div style={{ fontFamily: mono, fontSize: 11, color: C.red, marginTop: 6 }}>waiting for the presenter to press ▶</div>}
     </div>
   );
 }
@@ -3768,30 +3779,120 @@ function useClickLog() {
   return { log, push: (arr) => setLog((l) => [...l, ...arr].slice(-40)), clear: () => setLog([]) };
 }
 
-// ── SCENE 7 : two pairs of sunglasses ──
-function RoomStep7({ room }) {
-  const [a2, setA2] = useState(room.state.lens2 ?? 90);
-  const [follow, setFollow] = useState(true);
-  const a = follow ? (room.state.lens2 ?? 90) : a2;
-  const T = Room.malus(0, a);
+// ── SCENE 7 : the lamp alone (solo: one sheet) · two sheets (the sunglasses bench) ──
+function RoomStepBench({ room, solo }) {
+  const [own, setOwn] = useState(null);
+  const a1 = room.state.lens1 ?? 0;
+  const sheetIn = solo ? false : (room.state.sheetIn ?? true);
+  const a = own === null ? (room.state.lens2 ?? 0) : own;
+  const T = solo ? 0.5 : sheetIn ? Room.malus(a1, a) : 1;
+  const sheet = (x, ang, label, color) => <PhoneSheet x={x} y={60} a={ang} label={label} color={color} />;
   return (
     <div>
-      <p>Two polarizing sunglass lenses, one behind the other. The first only lets through the <strong>horizontal</strong> wiggle. Rotate the second: at 0° everything passes, at 90° nothing does.</p>
+      {solo
+        ? <p>A lamp, one striped sheet, a detector. The lamp wiggles every which way; whatever angle the sheet is turned to, the detector reads about <strong>half</strong>.</p>
+        : <p>Two sheets, one behind the other. After sheet 1 the light wiggles along sheet 1's stripes. Sheet 2 checks it: aligned, everything passes; crossed, nothing does.</p>}
       <svg viewBox="0 0 340 130" style={{ width: "100%", background: "#fff", border: `1.5px solid ${C.gridBold}`, borderRadius: 8, display: "block" }}>
-        <circle cx={28} cy={60} r="13" fill="#FFF4E8" stroke={C.gold} strokeWidth="2" />
+        <circle cx={28} cy={60} r="13" fill="#FDF4EC" stroke={C.gold} strokeWidth="2" />
         <line x1={42} y1={60} x2={290} y2={60} stroke={C.gridBold} strokeWidth="4" />
         <PhoneArrow x={70} y={60} a={45} color={C.inkSoft} />
-        <PhoneSheet x={125} y={60} a={0} label="lens 1 · 0°" />
-        <PhoneArrow x={175} y={60} a={0} />
-        <PhoneSheet x={225} y={60} a={a} label={`lens 2 · ${a}°`} color={C.gold} />
-        <PhoneArrow x={275} y={60} a={a} amp={Math.sqrt(T)} />
+        {solo ? <g>{sheet(175, a1, `the sheet · ${a1}°`, C.gold)}<PhoneArrow x={245} y={60} a={a1} amp={0.7} /></g> : <g>
+          {sheet(125, a1, `sheet 1 · ${a1}°`)}
+          <PhoneArrow x={175} y={60} a={a1} />
+          {sheetIn ? sheet(225, a, `sheet 2 · ${a}°`, C.gold) : <rect x={198} y={33} width={54} height={54} rx="6" fill="none" stroke={C.gridBold} strokeWidth="1.5" strokeDasharray="4 3" />}
+          <PhoneArrow x={275} y={60} a={sheetIn ? a : a1} amp={Math.sqrt(T)} />
+        </g>}
         <rect x={300} y={20} width={22} height={80} rx="4" fill="#fff" stroke={C.ink} strokeWidth="1.5" />
         <rect x={302} y={22 + 76 * (1 - T)} width={18} height={76 * T} fill={C.gold} rx="3" />
         <text x={311} y={118} textAnchor="middle" fontFamily={mono} fontSize="10" fontWeight="600" fill={C.ink}>{`${Math.round(T * 100)}%`}</text>
       </svg>
-      <Slider value={a} min={0} max={180} step={1} onChange={(v) => { setFollow(false); setA2(v); }} label="lens 2 angle" readout={`${a}° → ${Math.round(T * 100)}%`} />
-      <div style={{ fontFamily: mono, fontSize: 11, color: C.inkSoft, marginTop: -8 }}>{follow ? "following the presenter" : <button onClick={() => setFollow(true)} style={{ fontFamily: mono, fontSize: 11, border: "none", background: "none", color: C.gold, cursor: "pointer", padding: 0 }}>follow the presenter again</button>}</div>
-      <Notice>After lens 1 the light is <em>always-horizontal</em>: ask it the horizontal question again and it always says yes. You just built a fully known coin out of light. Nothing passes the vertical question — that is the <em>always-T</em> of light.</Notice>
+      {!solo && <>
+        <Slider value={a} min={0} max={180} step={1} onChange={setOwn} label="sheet 2 angle" readout={`${a}° → ${Math.round(T * 100)}%`} />
+        <div style={{ fontFamily: mono, fontSize: 11, color: C.inkSoft, marginTop: -8 }}>{own === null ? "following the presenter" : <button onClick={() => setOwn(null)} style={{ fontFamily: mono, fontSize: 11, border: "none", background: "none", color: C.gold, cursor: "pointer", padding: 0 }}>follow the presenter again</button>}</div>
+      </>}
+      {solo
+        ? <Notice>Nothing to do yet: read the detector. The sheet seems to dim the light by half, whichever way it is turned. The next slide shows that it does something more.</Notice>
+        : <Notice>After sheet 1 the light <em>remembers</em> a direction: ask it the same question again and it always says yes. You just built a fully known coin out of light. Cross the sheets and nothing passes: the always-T of light.</Notice>}
+    </div>
+  );
+}
+
+/* three sheets: 0° then 90° blocks everything; a middle sheet lets light through again */
+function ThreeSheets({ initialIn = false }) {
+  const [mid, setMid] = useState(45); const [midIn, setMidIn] = useState(initialIn);
+  const T1 = midIn ? Room.malus(0, mid) : 1, T = T1 * (midIn ? Room.malus(mid, 90) : 0);
+  return (
+    <div>
+      <svg viewBox="0 0 340 120" style={{ width: "100%", background: "#fff", border: `1.5px solid ${C.gridBold}`, borderRadius: 8, display: "block" }}>
+        <circle cx={22} cy={55} r="11" fill="#FDF4EC" stroke={C.gold} strokeWidth="2" />
+        <line x1={34} y1={55} x2={290} y2={55} stroke={C.gridBold} strokeWidth="4" />
+        <PhoneSheet x={85} y={55} size={46} a={0} label="0°" />
+        {midIn ? <PhoneSheet x={160} y={55} size={46} a={mid} label={`${mid}°`} color={C.gold} /> : <rect x={137} y={32} width={46} height={46} rx="5" fill="none" stroke={C.gridBold} strokeWidth="1.5" strokeDasharray="4 3" />}
+        <PhoneArrow x={205} y={55} a={midIn ? mid : 0} amp={Math.sqrt(T1)} />
+        <PhoneSheet x={245} y={55} size={46} a={90} label="90°" />
+        <rect x={300} y={15} width={22} height={80} rx="4" fill="#fff" stroke={C.ink} strokeWidth="1.5" />
+        <rect x={302} y={17 + 76 * (1 - T)} width={18} height={76 * T} fill={C.gold} rx="3" />
+        <text x={311} y={112} textAnchor="middle" fontFamily={mono} fontSize="10" fontWeight="600" fill={C.ink}>{`${Math.round(T * 100)}%`}</text>
+      </svg>
+      <div style={{ display: "flex", gap: 8, marginTop: 8, alignItems: "center" }}>
+        <Btn onClick={() => setMidIn((v) => !v)} kind={midIn ? "solid" : "ghost"}>{midIn ? "take it out" : "slide it in"}</Btn>
+        {midIn && <div style={{ flex: 1 }}><Slider value={mid} min={0} max={180} step={1} onChange={setMid} label="middle sheet" readout={`${mid}°`} /></div>}
+      </div>
+    </div>
+  );
+}
+// ── SCENE 7d : a third sheet ──
+function RoomStepThird() {
+  return (
+    <div>
+      <p>Sheet 1 horizontal, sheet 2 vertical: crossed, <strong>0%</strong>. Now slide a third striped sheet in <em>between</em> them and turn it.</p>
+      <ThreeSheets />
+      <Notice>An extra obstacle lets light through. Each sheet turns the light to its own stripes and keeps cos² of it: cos²(mid) · cos²(90° − mid), a quarter at 45°. Hold on to this: the sheet does not filter, it asks, and the light leaves with the sheet's answer.</Notice>
+    </div>
+  );
+}
+// ── SCENE 7b : what is polarization ──
+function RoomStepWave({ room }) {
+  const [own, setOwn] = useState(null);
+  const beta = own === null ? (room.state.lens1 ?? 30) : own;
+  const a = Math.cos(beta * DEG), b = Math.sin(beta * DEG);
+  return (
+    <div>
+      <p>Light wiggles sideways: a horizontal wiggle of size <strong>a</strong> and a vertical one of size <strong>b</strong>, locked by a² + b² = 1. Together they trace one needle at the angle β of sheet 1's stripes.</p>
+      <WaveDuo beta={beta} />
+      <Slider value={beta} min={0} max={180} step={1} onChange={setOwn} label="β · the wave's tilt" readout={`${beta}° → a = ${a.toFixed(2)}, b = ${b.toFixed(2)}`} />
+      <div style={{ fontFamily: mono, fontSize: 11, color: C.inkSoft, marginTop: -8 }}>{own === null ? "following the presenter" : <button onClick={() => setOwn(null)} style={{ fontFamily: mono, fontSize: 11, border: "none", background: "none", color: C.gold, cursor: "pointer", padding: 0 }}>follow the presenter again</button>}</div>
+      <Notice>Behind a horizontal sheet only the H wiggle survives: the needle is projected onto the stripes. The sizes (a, b) are scene 5's needle (√p, √(1−p)), in light.</Notice>
+    </div>
+  );
+}
+// ── SCENE 7c : the curve, cos²(φ − β) ──
+function RoomStepCurve({ room }) {
+  const beta = room.state.lens1 ?? 0;
+  const [own, setOwn] = useState(null);
+  const phi = own === null ? (room.state.lens2 ?? 0) : own;
+  const x0 = 36, x1 = 320, y0 = 160, y1 = 30;
+  const X = (ang) => x0 + (ang / 180) * (x1 - x0), Y = (v) => y0 - v * (y0 - y1);
+  const pts = Array.from({ length: 91 }, (_, i) => { const ang = i * 2; return `${X(ang).toFixed(1)},${Y(Room.malus(beta, ang)).toFixed(1)}`; }).join(" ");
+  const T = Room.malus(beta, phi);
+  return (
+    <div>
+      <p>The same two angles as a graph. β is the wave's tilt (sheet 1), φ the stripes of sheet 2. The detector reads <strong>cos²(φ − β)</strong>: all when aligned, nothing when crossed, half at 45° apart.</p>
+      <svg viewBox="0 0 340 190" style={{ width: "100%", background: "#fff", border: `1.5px solid ${C.gridBold}`, borderRadius: 8, display: "block" }}>
+        <line x1={x0} y1={y0} x2={x1} y2={y0} stroke={C.inkSoft} strokeWidth="1.2" /><line x1={x0} y1={y0} x2={x0} y2={y1} stroke={C.inkSoft} strokeWidth="1.2" />
+        <line x1={x0} y1={Y(0.5)} x2={x1} y2={Y(0.5)} stroke={C.gridBold} strokeWidth="1" strokeDasharray="4 3" />
+        {[0, 45, 90, 135, 180].map((ang) => <text key={ang} x={X(ang)} y={y0 + 14} textAnchor="middle" fontFamily={mono} fontSize="9" fill={C.inkSoft}>{`${ang}°`}</text>)}
+        <text x={x0 - 4} y={y1 + 4} textAnchor="end" fontFamily={mono} fontSize="9" fill={C.inkSoft}>1</text>{phi > 8 && <text x={x0 - 4} y={Y(0.5) + 3} textAnchor="end" fontFamily={mono} fontSize="9" fill={C.inkSoft}>½</text>}
+        <polyline points={pts} fill="none" stroke={C.ink} strokeWidth="2" />
+        <line x1={X(beta)} y1={y0} x2={X(beta)} y2={y1} stroke={C.teal} strokeWidth="1.5" strokeDasharray="5 4" />
+        <text x={X(beta)} y={y1 - 6} textAnchor="middle" fontFamily={mono} fontSize="10" fill={C.teal}>{`β ${beta}°`}</text>
+        <line x1={X(phi)} y1={y0} x2={X(phi)} y2={Y(T)} stroke={C.gold} strokeWidth="1.5" />
+        <circle cx={X(phi)} cy={Y(T)} r="6" fill="#fff" stroke={C.gold} strokeWidth="3" />
+        <text x={x1} y={y0 + 28} textAnchor="end" fontFamily={mono} fontSize="10" fill={C.ink}>{`φ ${phi}° → ${Math.round(T * 100)}%`}</text>
+      </svg>
+      <Slider value={phi} min={0} max={180} step={1} onChange={setOwn} label="φ · sheet 2" readout={`${phi}°`} />
+      <div style={{ fontFamily: mono, fontSize: 11, color: C.inkSoft, marginTop: -8 }}>{own === null ? "following the presenter" : <button onClick={() => setOwn(null)} style={{ fontFamily: mono, fontSize: 11, border: "none", background: "none", color: C.gold, cursor: "pointer", padding: 0 }}>follow the presenter again</button>}</div>
+      <Notice>Malus's law. The part of the needle along the stripes is cos(φ − β); the brightness is its square. First project, then square: every fraction from here on is this.</Notice>
     </div>
   );
 }
@@ -3806,12 +3907,53 @@ function RoomStep8({ room }) {
   return (
     <div>
       <p>Your phone now holds a <strong>beam of light</strong> with a polarization angle you cannot see — it came with your seat. Send photons one at a time through a horizontal sheet: each one either passes (a click) or is blocked. Heads or tails.</p>
-      <PhotonBench angle={q} tally={tally} log={L.log} disabled={B.theta === null} onOne={() => fire(1)} onMany={() => fire(25)} />
+      <PhotonBench angle={q} tally={tally} log={L.log} disabled={B.theta === null} closed={!room.state.collect} onOne={() => fire(1)} onMany={() => fire(25)} />
       {B.theta === null && <div style={{ fontFamily: mono, fontSize: 11, color: C.red, marginTop: 6 }}>waiting for your seat number…</div>}
       <Notice>The fraction that passes is your beam's p for the horizontal question. Every click lands on the presenter's line; your emoji marks your beam. Nobody knows the angles yet — not even you.</Notice>
     </div>
   );
 }
+
+// ── SCENE 8 (rounds in light) : the three coins replayed with photons ──
+/* snapshot: lround = { A:{ "0":{n,passed}, … }, B:{…}, C:{…} } — round A: everyone's beam at 45°; B: H or V by seat, unknown; C: your secret angle */
+function useLightRound(room) {
+  const key = "pf-lround-" + room.session;
+  const [lr, setLr] = useState(() => { try { const v = JSON.parse(sessionStorage.getItem(key)); if (v && v.A && v.B && v.C) return v; } catch (e) {} return { A: {}, B: {}, C: {} }; });
+  useEffect(() => { try { sessionStorage.setItem(key, JSON.stringify(lr)); } catch (e) {} room.send("lround", lr); }, [lr]);
+  const round = ["A", "B", "C"].includes(room.state.lround) ? room.state.lround : "A";
+  const token = room.state.lresetToken || 0, last = useRef(token);
+  useEffect(() => { if (token !== last.current) { last.current = token; setLr((l) => ({ ...l, [round]: {} })); } }, [token]);
+  const me = room.me;
+  const abeam = [30, 45, 60, 90].includes(Number(room.state.abeam)) ? Number(room.state.abeam) : 45; // round A's beam — 45° unless the presenter's dial says otherwise
+  const beta = !me ? null : round === "A" ? abeam : round === "B" ? (me.face ? 0 : 90) : me.theta;
+  const lkey = (angle) => round === "A" && beta !== 45 ? angle + "@" + beta : String(angle);
+  const delta = me && round === "C" ? me.delta : 0;
+  const add = (angle, results) => setLr((l) => { const a = lkey(angle), cur = l[round][a] || { n: 0, passed: 0 }; return { ...l, [round]: { ...l[round], [a]: { n: cur.n + results.length, passed: cur.passed + results.reduce((x, y) => x + y, 0) } } }; });
+  return { lr, round, beta, delta, add, lkey };
+}
+function RoomStepLight({ room }) {
+  const R = useLightRound(room);
+  const L = useClickLog();
+  const q = room.state.question ?? 0;
+  useEffect(() => { L.clear(); }, [q, R.round, R.beta]);
+  const tally = R.lr[R.round][R.lkey(q)];
+  // one photon at a time, so the presenter's paths grow click by click
+  const fire = (k) => { if (R.beta === null) return; let i = 0; const one = () => { const v = Room.photon(R.beta, q, 0, R.delta); L.push([v]); R.add(q, [v]); if (++i < k) setTimeout(one, 350); }; one(); };
+  const intro = {
+    A: <p>Round A, in light. Everyone holds the <strong>same beam</strong>, tilted {R.beta}°{R.beta === 45 ? " — as much horizontal as vertical wiggle" : ""}. Send photons through the presenter's sheet (now at <strong>{q}°</strong>): each one either passes (a click, 1) or is blocked (no click, 0).</p>,
+    B: <p>Round B, in light. Your beam is either <strong>horizontal or vertical</strong> — it came with your seat and nobody knows which, not even you. Send photons through the presenter's sheet (now at <strong>{q}°</strong>): click 1, no click 0.</p>,
+    C: <p>Round C, in light. Your beam wiggles at a <strong>secret angle</strong> of its own. Send photons through the presenter's sheet (now at <strong>{q}°</strong>): click 1, no click 0.</p>,
+  }[R.round];
+  return (
+    <div>
+      {intro}
+      <PhotonBench angle={q} tally={tally} log={L.log} disabled={R.beta === null} closed={!room.state.collect} onOne={() => fire(1)} onMany={() => fire(20)} manyLabel="send 20, one by one" />
+      {R.beta === null && <div style={{ fontFamily: mono, fontSize: 11, color: C.red, marginTop: 6 }}>waiting for your seat number…</div>}
+      <Notice>Fraction and bandwidth, exactly as with the coin. When the presenter turns the sheet, send another batch — the new angle is a new question.</Notice>
+    </div>
+  );
+}
+function RoomStep8Router({ room }) { return ["A", "B", "C"].includes(room.state.lround) ? <RoomStepLight room={room} /> : <RoomStep8 room={room} />; }
 
 // ── SCENE 9 : the half circle, in glass ──
 function RoomStep9({ room }) {
@@ -3857,7 +3999,7 @@ function RoomStep10({ room }) {
     <div>
       <p>So far your beam's polarization was fixed. Now let it <strong>wander</strong>: turn up the noise and the angle jitters from photon to photon. At full noise the light is <em>unpolarized</em> — like a bulb, not a laser through a sheet.</p>
       <Slider value={B.beam.noise} min={0} max={1} step={0.05} onChange={B.setNoise} label="noise — how much the polarization wanders" readout={B.beam.noise === 0 ? "none (pure)" : B.beam.noise >= 0.95 ? "fully unpolarized" : B.beam.noise.toFixed(2)} />
-      <PhotonBench angle={0} tally={t0} log={L.log} disabled={B.theta === null} onOne={() => fire(1)} onMany={() => fire(25)} />
+      <PhotonBench angle={0} tally={t0} log={L.log} disabled={B.theta === null} closed={!room.state.collect} onOne={() => fire(1)} onMany={() => fire(25)} />
       <StatePlot point={p !== null ? [p, sigOf(p) * (1 - B.beam.noise)] : null} />
       {mine && <div style={{ fontFamily: mono, fontSize: 12, color: C.red, marginTop: 6, fontWeight: 600 }}>the presenter is pointing at your beam</div>}
       <Notice>Changing the noise makes a new beam: your old counts are cleared. A wandering beam sinks toward the centre — unpolarized light sits at the state of no information. Notice: a pure 45° beam and an unpolarized beam both answer 50% to the horizontal question. The fair coin and the mystery coin, in glass.</Notice>
@@ -3878,29 +4020,42 @@ function RoomStep11({ room }) {
   return (
     <div>
       <p>The presenter turns the sheet. The question is now: <strong>do you pass a {q}° sheet?</strong> Send 25 photons and watch your dot jump on the big screen.</p>
-      <PhotonBench angle={q} tally={tq} log={L.log} disabled={B.theta === null} onOne={() => fire(1)} onMany={() => fire(25)} />
+      <PhotonBench angle={q} tally={tq} log={L.log} disabled={B.theta === null} closed={!room.state.collect} onOne={() => fire(1)} onMany={() => fire(25)} />
       <div style={{ fontFamily: mono, fontSize: 12, color: C.ink, marginTop: 8 }}>
         0° sheet: {t0 && t0.n ? (t0.passed / t0.n).toFixed(2) : "—"} · 45° sheet: {t45 && t45.n ? (t45.passed / t45.n).toFixed(2) : "—"}
         {t0 && t0.n && t45 && t45.n ? <> · bandwidth from 0°: {sigOf(t0.passed / t0.n).toFixed(2)} · (45° answer − ½) = <strong>{(t45.passed / t45.n - 0.5).toFixed(2)}</strong></> : null}
       </div>
       <Notice>The 45° answer minus ½ is your bandwidth — with a sign. Nature keeps the same two numbers we chose for coins, and she signs them. Why: the sheet <em>projects</em> the needle (add the components along the sheet), and the light you see is the square. Malus's law is "first add, then square".</Notice>
       <p style={{ marginTop: 16 }}><strong>Three sheets.</strong> 0° then 90° blocks everything. Slide a middle sheet between them:</p>
-      <svg viewBox="0 0 340 120" style={{ width: "100%", background: "#fff", border: `1.5px solid ${C.gridBold}`, borderRadius: 8, display: "block" }}>
-        <circle cx={22} cy={55} r="11" fill="#FFF4E8" stroke={C.gold} strokeWidth="2" />
-        <line x1={34} y1={55} x2={290} y2={55} stroke={C.gridBold} strokeWidth="4" />
-        <PhoneSheet x={85} y={55} size={46} a={0} label="0°" />
-        {midIn ? <PhoneSheet x={160} y={55} size={46} a={mid} label={`${mid}°`} color={C.gold} /> : <rect x={137} y={32} width={46} height={46} rx="5" fill="none" stroke={C.gridBold} strokeWidth="1.5" strokeDasharray="4 3" />}
-        <PhoneArrow x={205} y={55} a={midIn ? mid : 0} amp={Math.sqrt(T1)} />
-        <PhoneSheet x={245} y={55} size={46} a={90} label="90°" />
-        <rect x={300} y={15} width={22} height={80} rx="4" fill="#fff" stroke={C.ink} strokeWidth="1.5" />
-        <rect x={302} y={17 + 76 * (1 - T)} width={18} height={76 * T} fill={C.gold} rx="3" />
-        <text x={311} y={112} textAnchor="middle" fontFamily={mono} fontSize="10" fontWeight="600" fill={C.ink}>{`${Math.round(T * 100)}%`}</text>
-      </svg>
-      <div style={{ display: "flex", gap: 8, marginTop: 8, alignItems: "center" }}>
-        <Btn onClick={() => setMidIn((v) => !v)} kind={midIn ? "solid" : "ghost"}>{midIn ? "take it out" : "slide it in"}</Btn>
-        {midIn && <div style={{ flex: 1 }}><Slider value={mid} min={0} max={180} step={1} onChange={setMid} label="middle sheet" readout={`${mid}°`} /></div>}
-      </div>
+      <ThreeSheets />
       <Notice>An extra obstacle lets light through. Each sheet projects, then the intensity squares: cos²(mid) · cos²(90° − mid). Claim № 2, caught.</Notice>
+    </div>
+  );
+}
+
+// ── SCENE 11 (current deck) : a different question — the 0° numbers (p, E) become the 45° numbers; your own ledger for the light round ──
+function RoomStepSwap({ room }) {
+  const R = useLightRound(room);
+  const L = useClickLog();
+  const q = [0, 45].includes(Number(room.state.question)) ? Number(room.state.question) : 45;
+  useEffect(() => { L.clear(); }, [q, R.round, R.beta]);
+  const t0 = R.lr[R.round][R.lkey(0)], t45 = R.lr[R.round][R.lkey(45)];
+  const p0 = t0 && t0.n ? t0.passed / t0.n : null, p45 = t45 && t45.n ? t45.passed / t45.n : null;
+  const fire = (k) => { if (R.beta === null) return; let i = 0; const one = () => { const v = Room.photon(R.beta, q, 0, R.delta); L.push([v]); R.add(q, [v]); if (++i < k) setTimeout(one, 350); }; one(); };
+  const row = (l, v) => <div style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: `1px solid ${C.gridBold}` }}><span>{l}</span><strong>{v}</strong></div>;
+  return (
+    <div>
+      <p>Turn the sheet 45° and the disk turns 90°. Read that as bookkeeping: the 45° sheet's answer is your second number <strong>plus a half</strong>. Send photons through the sheet the presenter has chosen (now <strong>{q}°</strong>) and compare your two ledgers.</p>
+      <PhotonBench angle={q} tally={R.lr[R.round][R.lkey(q)]} log={L.log} disabled={R.beta === null} closed={!room.state.collect} onOne={() => fire(1)} onMany={() => fire(20)} manyLabel="send 20, one by one" />
+      <div style={{ fontFamily: mono, fontSize: 12, marginTop: 10 }}>
+        {row("0° sheet · p", p0 === null ? "—" : p0.toFixed(2))}
+        {row("0° sheet · bandwidth √(p(1−p))", p0 === null ? "—" : `± ${sigOf(p0).toFixed(2)}`)}
+        {row("45° sheet · p₄₅", p45 === null ? "—" : p45.toFixed(2))}
+        {row("p₄₅ − ½", p45 === null ? "—" : fmt(p45 - 0.5))}
+      </div>
+      <Notice>{p0 !== null && p45 !== null
+        ? `Your bandwidth from the 0° sheet is ${sigOf(p0).toFixed(2)}; the 45° sheet reads ${fmt(p45 - 0.5)}. Same size, and now a sign. Nature keeps the two numbers we chose for coins, and signs the second one.`
+        : "Answer both sheets (the presenter switches them) and the two ledgers line up: the 45° answer minus ½ is the bandwidth, sign included."}</Notice>
     </div>
   );
 }
@@ -3963,22 +4118,55 @@ function PhoneBall({ view, dots, demo }) {
   const cx = 170, cy = 130, R = 105;
   const P = (sv) => { const q = Room.project(sv, view); return { x: cx + q.x * 2 * R, y: cy - q.y * 2 * R, depth: q.depth }; };
   const ring = (fn) => Array.from({ length: 49 }, (_, i) => { const q = P(fn((i / 48) * 2 * Math.PI)); return `${q.x.toFixed(1)},${q.y.toFixed(1)}`; }).join(" ");
-  const ax = (sv, label, col) => { const q = P(sv); return <g key={label}><line x1={cx} y1={cy} x2={q.x} y2={q.y} stroke={col} strokeWidth="1.5" opacity={q.depth < 0 ? 0.3 : 0.9} /><text x={q.x + (q.x - cx) * 0.14} y={q.y + (q.y - cy) * 0.14 + 4} textAnchor="middle" fontFamily={mono} fontSize="9" fill={col} fontWeight="600">{label}</text></g>; };
+  const ax = (sv, label, col) => { const q = P(sv), len = Math.hypot(q.x - cx, q.y - cy); return <g key={label}><line x1={cx} y1={cy} x2={q.x} y2={q.y} stroke={col} strokeWidth="1.5" opacity={q.depth < 0 ? 0.3 : 0.9} />{len > 0.3 * R && <text x={q.x + (q.x - cx) * 0.14} y={q.y + (q.y - cy) * 0.14 + 4} textAnchor="middle" fontFamily={mono} fontSize="9" fill={col} fontWeight="600">{label}</text>}</g>; };
   return (
     <svg viewBox="0 0 340 260" style={{ width: "100%", background: "#fff", border: `1.5px solid ${C.gridBold}`, borderRadius: 8, display: "block" }}>
       <circle cx={cx} cy={cy} r={R} fill="#fff" stroke={C.ink} strokeWidth="1.5" />
       <polyline points={ring((a) => ({ s1: 0.5 * Math.cos(a), s2: 0.5 * Math.sin(a), s3: 0 }))} fill="none" stroke={C.inkSoft} strokeWidth="1" strokeDasharray="4 3" />
-      {[ax({ s1: 0.6, s2: 0, s3: 0 }, "H", C.gold), ax({ s1: -0.6, s2: 0, s3: 0 }, "V", C.gold), ax({ s1: 0, s2: 0.6, s3: 0 }, "45°", C.teal), ax({ s1: 0, s2: 0, s3: 0.6 }, "circ", C.violet)]}
+      {[ax({ s1: 0.6, s2: 0, s3: 0 }, "H", C.gold), ax({ s1: -0.6, s2: 0, s3: 0 }, "V", C.gold), ax({ s1: 0, s2: 0.6, s3: 0 }, "45°", C.teal), ax({ s1: 0, s2: 0, s3: 0.6 }, "circ ↺", C.violet), ax({ s1: 0, s2: 0, s3: -0.6 }, "circ ↻", C.violet)]}
       {(dots || []).map((d, i) => { const q = P(d.sv); return <g key={i} opacity={q.depth < 0 ? 0.35 : 1}><circle cx={q.x} cy={q.y} r={d.mine ? 7 : 4} fill={d.color} stroke={d.mine ? C.ink : "none"} strokeWidth="1.5" />{d.mine && <text x={q.x} y={q.y - 10} textAnchor="middle" fontSize="12">{d.tag}</text>}</g>; })}
       {demo && (() => { const q = P(demo); return <g><line x1={cx} y1={cy} x2={q.x} y2={q.y} stroke={C.violet} strokeWidth="2.5" /><circle cx={q.x} cy={q.y} r="6" fill={C.violet} stroke={C.ink} strokeWidth="1.5" /></g>; })()}
     </svg>
   );
 }
 
-// ── SCENE 14 : the shadow ──
+// ── SCENE 14 : the impostor — Fresnel's glass ──
 function RoomStep14({ room }) {
+  const B = useBeam(room);
+  const L = useClickLog();
+  const q = room.state.question === 45 ? 45 : 0;
+  useEffect(() => { L.clear(); }, [q]);
+  const st = stokesMine(B);
+  const fire = (k) => { if (B.theta === null) return; const arr = []; for (let i = 0; i < k; i++) arr.push(Room.photon(B.theta, q, B.beam.noise, B.delta)); L.push(arr); B.addResults(q, arr); };
+  const r = st.s1 !== null && st.s2 !== null ? Math.hypot(st.s1, st.s2) : null;
+  const pure = B.beam.noise < 0.05;
+  const cx = 170, cy = 100, R = 76;
+  return (
+    <div>
+      <p>In 1817 Fresnel sent a beam through a block of glass. Nothing was absorbed — yet afterwards every sheet, at every angle, read 50%. Some beams in this room have been through such a glass; nobody can tell which. Send 25 photons through the sheet the presenter has chosen.</p>
+      <PhotonBench angle={q} tally={B.beam.q[String(q)]} log={L.log} disabled={B.theta === null} closed={!room.state.collect} onOne={() => fire(1)} onMany={() => fire(25)} />
+      <div style={{ fontFamily: mono, fontSize: 12, color: C.ink, margin: "8px 0" }}>
+        0° sheet: {st.s1 === null ? "—" : (st.s1 + 0.5).toFixed(2)} · 45° sheet: {st.s2 === null ? "—" : (st.s2 + 0.5).toFixed(2)}
+      </div>
+      <svg viewBox="0 0 340 200" style={{ width: "100%", background: "#fff", border: `1.5px solid ${C.gridBold}`, borderRadius: 8, display: "block" }}>
+        <circle cx={cx} cy={cy} r={R} fill="none" stroke={C.ink} strokeWidth="1.5" /><line x1={cx - R} y1={cy} x2={cx + R} y2={cy} stroke={C.inkSoft} strokeWidth="1" /><line x1={cx} y1={cy - R} x2={cx} y2={cy + R} stroke={C.inkSoft} strokeWidth="1" />
+        <text x={cx + R + 6} y={cy + 3} fontFamily={mono} fontSize="9" fill={C.gold}>H</text><text x={cx - R - 6} y={cy + 3} textAnchor="end" fontFamily={mono} fontSize="9" fill={C.gold}>V</text>
+        <text x={cx} y={cy - R - 6} textAnchor="middle" fontFamily={mono} fontSize="9" fill={C.teal}>45°</text>
+        <circle cx={cx} cy={cy} r="7" fill="none" stroke={C.violet} strokeWidth="1.5" strokeDasharray="3 2" /><text x={cx + 12} y={cy + 16} fontFamily={mono} fontSize="8.5" fill={C.violet}>round B pooled here</text>
+        {st.s1 !== null && <g><circle cx={cx + st.s1 * 2 * R} cy={cy - (st.s2 || 0) * 2 * R} r="7" fill={pure ? C.gold : C.inkSoft} stroke={C.ink} strokeWidth="1.5" opacity={st.s2 === null ? 0.5 : 1} />{pure && r !== null && r < 0.42 && <circle cx={cx + st.s1 * 2 * R} cy={cy - st.s2 * 2 * R} r="14" fill="none" stroke={C.red} strokeWidth="2" />}</g>}
+        <text x={cx} y={192} textAnchor="middle" fontFamily={mono} fontSize="9" fill={C.inkSoft}>{st.s2 === null ? "your beam on the disk (45° sheet still to ask)" : "your beam on the disk"}</text>
+      </svg>
+      <Notice>{pure && r !== null && r < 0.42
+        ? "Every sheet says 50% to your beam — it looks like lamplight. But your beam has no noise at all: it is pure. Two different things on one point of the disk."
+        : "A beam that answers 50% at every angle lands at the centre — lamplight does, and round B's mystery room did. Some of the beams there are pure. The disk has one seat for two different things."}
+      </Notice>
+    </div>
+  );
+}
+
+// ── SCENE 15 : the clocks — Fresnel's guess ──
+function RoomStep15({ room }) {
   const [run, setRun] = useState(true);
-  const unlocked = !!room.state.unlockDelay;
   const [own, setOwn] = useState(null);
   const off = own === null ? (room.state.clockOffset ?? 0) : own;
   const t = useTicker(run);
@@ -3987,7 +4175,7 @@ function RoomStep14({ room }) {
   const Clock = ({ x, y, a, col }) => <g><circle cx={x} cy={y} r="13" fill="#fff" stroke={col} strokeWidth="1.5" /><line x1={x} y1={y} x2={x + 10 * Math.cos(a)} y2={y - 10 * Math.sin(a)} stroke={col} strokeWidth="2" strokeLinecap="round" /></g>;
   return (
     <div>
-      <p>Watch a linear beam's field tip: it bounces back and forth along a line. A point bouncing on a line is exactly what the <em>shadow</em> of a point going round a circle looks like. So — is the bounce the shadow of something with one more knob?</p>
+      <p>A linear beam's field tip bounces along a line — exactly the <em>shadow</em> of a point going round a circle. The needle's two parts each carry a clock. Fresnel's guess (1823): the glass makes the V-clock run late.</p>
       <svg viewBox="0 0 340 230" style={{ width: "100%", background: "#fff", border: `1.5px solid ${C.gridBold}`, borderRadius: 8, display: "block" }}>
         <circle cx={80} cy={110} r="60" fill="none" stroke={C.ink} strokeWidth="1.2" />
         <line x1={80 - 60 * Math.cos(th)} y1={110 + 60 * Math.sin(th)} x2={80 + 60 * Math.cos(th)} y2={110 - 60 * Math.sin(th)} stroke={C.inkSoft} strokeWidth="1.2" />
@@ -3999,72 +4187,51 @@ function RoomStep14({ room }) {
         <line x1={190} y1={170} x2={190 + 120 * hx} y2={170 - 120 * vy} stroke={C.violet} strokeWidth="3" strokeLinecap="round" />
         <circle cx={190 + 120 * hx} cy={170 - 120 * vy} r="5" fill={C.violet} />
         <Clock x={325} y={150} a={ph} col={C.gold} /><Clock x={210} y={25} a={ph - off * DEG} col={C.teal} />
-        <text x={255} y={210} textAnchor="middle" fontFamily={mono} fontSize="9" fill={C.inkSoft}>{off === 0 ? "clocks in step → a line" : `V lags ${off}° → a loop`}</text>
+        <text x={255} y={210} textAnchor="middle" fontFamily={mono} fontSize="9" fill={C.inkSoft}>{off === 0 ? "clocks in step → a line" : off === 90 ? "a quarter turn late → a circle" : off === 180 ? "half a turn late → the twin's line" : `V ${off}° late → an ellipse`}</text>
       </svg>
       <div style={{ display: "flex", gap: 8, marginTop: 8, alignItems: "center" }}>
         <Btn kind="ghost" onClick={() => setRun((v) => !v)}>{run ? "pause" : "play"}</Btn>
-        <div style={{ flex: 1, opacity: unlocked ? 1 : 0.4 }}><Slider value={off} min={0} max={180} step={5} onChange={unlocked ? setOwn : () => {}} label={unlocked ? "offset the clocks" : "offset the clocks — locked"} readout={`${off}°`} /></div>
+        <div style={{ flex: 1 }}><Slider value={off} min={0} max={180} step={5} onChange={setOwn} label="the glass delays the V-clock by" readout={`${off}°`} /></div>
       </div>
-      <Notice>The needle's two parts each carry a little clock, and so far the two clocks tick in step. The only knob we have not turned is the offset between them. That knob is a <em>delay</em> of one part behind the other — and it is the next scene. (This is a hint, not a proof.)</Notice>
+      <div style={{ fontFamily: mono, fontSize: 11, color: C.inkSoft, marginTop: -8 }}>{own === null ? "following the presenter" : <button onClick={() => setOwn(null)} style={{ fontFamily: mono, fontSize: 11, border: "none", background: "none", color: C.gold, cursor: "pointer", padding: 0 }}>follow the presenter again</button>}</div>
+      <Notice>A quarter turn late and the tip goes round: <em>circular light</em>, the thing the disk had no seat for. Half a turn late and it is a line again, mirrored — the twin of scene 13. The sign was a delay all along. This is a guess, not a proof; it predicts that a second glass undoes the first. That is the next test.</Notice>
     </div>
   );
 }
 
-// ── SCENE 15 : the impostor ──
-function RoomStep15({ room }) {
-  const B = useBeam(room);
-  const L = useClickLog();
-  const [q, setQ] = useState(0);
-  const lift = !!room.state.lift;
-  const st = stokesMine(B);
-  const fire = (k) => { const arr = []; for (let i = 0; i < k; i++) arr.push(Room.photon(B.theta, q, B.beam.noise, B.delta)); L.push(arr); B.addResults(q, arr); };
-  const r = st.s1 !== null && st.s2 !== null ? Math.hypot(st.s1, st.s2) : null;
-  const pure = B.beam.noise < 0.05;
-  const cx = 110, cy = 110, R = 80;
-  return (
-    <div>
-      <p>Three questions for your beam: the 0° sheet, the 45° sheet, and a new one — a <strong>delay</strong> (the V-part lags the H-part by a quarter turn) followed by a sheet. Ask each one 25 photons.</p>
-      <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
-        {[0, 45, "C"].map((a) => <button key={a} onClick={() => { setQ(a); L.clear(); }} style={{ fontFamily: mono, fontSize: 11, padding: "5px 10px", borderRadius: 12, cursor: "pointer", border: `1.5px solid ${q === a ? C.gold : C.gridBold}`, background: q === a ? C.goldSoft : "#fff", color: C.ink }}>{a === "C" ? "delay + sheet" : `${a}° sheet`}</button>)}
-      </div>
-      <PhotonBench angle={q === "C" ? 0 : q} tally={B.beam.q[String(q)]} log={L.log} disabled={B.theta === null} onOne={() => fire(1)} onMany={() => fire(25)} />
-      <div style={{ fontFamily: mono, fontSize: 12, color: C.ink, margin: "8px 0" }}>
-        0°: {st.s1 === null ? "—" : (st.s1 + 0.5).toFixed(2)} · 45°: {st.s2 === null ? "—" : (st.s2 + 0.5).toFixed(2)} · delay: {st.s3 === null ? "—" : (st.s3 + 0.5).toFixed(2)}
-      </div>
-      <svg viewBox="0 0 340 230" style={{ width: "100%", background: "#fff", border: `1.5px solid ${C.gridBold}`, borderRadius: 8, display: "block" }}>
-        <circle cx={cx} cy={cy} r={R} fill="none" stroke={C.ink} strokeWidth="1.5" /><line x1={cx - R} y1={cy} x2={cx + R} y2={cy} stroke={C.inkSoft} strokeWidth="1" /><line x1={cx} y1={cy - R} x2={cx} y2={cy + R} stroke={C.inkSoft} strokeWidth="1" />
-        <text x={cx} y={215} textAnchor="middle" fontFamily={mono} fontSize="9" fill={C.inkSoft}>the disk: 0° across, 45° up</text>
-        {r !== null && <g><circle cx={cx + st.s1 * 2 * R} cy={cy - st.s2 * 2 * R} r="7" fill={pure ? C.gold : C.inkSoft} stroke={C.ink} strokeWidth="1.5" />{pure && r < 0.42 && <circle cx={cx + st.s1 * 2 * R} cy={cy - st.s2 * 2 * R} r="14" fill="none" stroke={C.red} strokeWidth="2" />}</g>}
-        <circle cx={240} cy={cy} r={R} fill="none" stroke={C.ink} strokeWidth="1.5" opacity={lift ? 1 : 0.2} /><line x1={240 - R} y1={cy} x2={240 + R} y2={cy} stroke={C.inkSoft} strokeWidth="1" opacity={lift ? 1 : 0.2} /><line x1={240} y1={cy - R} x2={240} y2={cy + R} stroke={C.inkSoft} strokeWidth="1" opacity={lift ? 1 : 0.2} />
-        <text x={240} y={215} textAnchor="middle" fontFamily={mono} fontSize="9" fill={C.inkSoft}>{lift ? "side view: 45° across, delay up" : "side view (presenter lifts)"}</text>
-        {lift && st.s2 !== null && st.s3 !== null && <circle cx={240 + st.s2 * 2 * R} cy={cy - st.s3 * 2 * R} r="7" fill={pure ? C.gold : C.inkSoft} stroke={C.ink} strokeWidth="1.5" />}
-      </svg>
-      <Notice>{pure && r !== null && r < 0.42
-        ? "Your beam has no noise at all — it is pure — and yet it sits inside the disk, where only mixtures were allowed. Every sheet you can turn says the same thing. Two different things at one point: the disk is too small."
-        : "A beam that answers 50% to every sheet angle looks unpolarized — the centre of the disk. If it is pure, the delay question says 100% where unpolarized light says 50%. The disk is too small."}
-      </Notice>
-    </div>
-  );
-}
-
-// ── SCENE 16 : the ball ──
+// ── SCENE 16 : the ball — the undo test ──
 function RoomStep16({ room }) {
   const B = useBeam(room);
-  const view = room.state.view || { az: -35, el: 22 };
-  const [th, setTh] = useState(null); const [de, setDe] = useState(null);
-  const T = th === null ? (room.state.theta ?? 45) : th, D = de === null ? (room.state.delta ?? 0) : de;
+  const L = useClickLog();
+  const second = room.state.question === "C";
+  const tilted = !!room.state.tilted;
+  const [tilt, setTilt] = useState(tilted ? 1 : 0);
+  useEffect(() => {
+    const from = tilt, to = tilted ? 1 : 0; if (from === to) return;
+    const t0 = performance.now(), D = 1800 * Math.abs(to - from); let id;
+    const step = (now) => { const u = Math.min(1, (now - t0) / D); setTilt(from + (to - from) * u); if (u < 1) id = requestAnimationFrame(step); };
+    id = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(id);
+  }, [tilted]);
+  const view0 = room.state.view || { az: -35, el: 22 };
+  const ease = tilt * tilt * (3 - 2 * tilt);
+  const view = { az: view0.az * ease, el: -90 + (view0.el + 90) * ease };
   const st = stokesMine(B);
+  const fire = (k) => { if (B.theta === null) return; const arr = []; for (let i = 0; i < k; i++) arr.push(Room.photon(B.theta, "C", B.beam.noise, B.delta)); L.push(arr); B.addResults("C", arr); };
   const mine = st.s1 !== null && st.s2 !== null ? [{ sv: { s1: st.s1, s2: st.s2, s3: st.s3 === null ? 0 : st.s3 }, color: C.gold, mine: true, tag: room.tag }] : [];
   const others = aggBeams(room).filter((b) => !(room.me && b.slot === room.me.slot)).map((b) => { const o = Room.stokesOf(b.q); return o.s1 === null || o.s2 === null ? null : { sv: { s1: o.s1, s2: o.s2, s3: o.s3 === null ? 0 : o.s3 }, color: "#F3C9A0" }; }).filter(Boolean);
-  const demo = Room.stokes(T, D);
+  const demo = Room.stokes(room.state.theta ?? 45, room.state.delta ?? 0);
   return (
     <div>
-      <p>Three questions, three numbers, one ball. The delay dial sweeps the disk out of its plane; every pure beam sits on the surface, every mixture inside. Nothing is left to ask.</p>
-      <PhoneBall view={view} dots={[...others, ...mine]} demo={demo} />
-      <Slider value={T} min={0} max={180} step={1} onChange={setTh} label="demo beam θ" readout={`${T}°`} />
-      <Slider value={D} min={0} max={360} step={5} onChange={setDe} label="demo beam delay" readout={`${D}°`} />
-      <div style={{ fontFamily: mono, fontSize: 11, color: C.inkSoft }}>{th === null && de === null ? "demo beam follows the presenter" : <button onClick={() => { setTh(null); setDe(null); }} style={{ fontFamily: mono, fontSize: 11, border: "none", background: "none", color: C.gold, cursor: "pointer", padding: 0 }}>follow the presenter again</button>}</div>
-      <Notice>Your beam is the gold dot with your name (height from the delay question; 0 if you did not ask it). This is the Bernoulli ball — the Poincaré sphere of optics, the Bloch ball of a qubit. Same ball.</Notice>
+      {!tilted ? <p>The undo test (Stokes, 1852). The presenter puts a <strong>second glass</strong> in front of every beam, then asks the 45° sheet. If the first glass only delayed one part, the second undoes it — and a beam that read 50% everywhere now answers 100% or 0%. Noise cannot be undone. Send 25 photons when the bench opens.</p>
+        : <p>Third time, the same move: two different things on one point, so add an axis. Bandwidth made the half-disk, the fold made the disk — the third number makes the <strong>ball</strong> (Poincaré, 1892).</p>}
+      <PhotonBench angle={45} glass tally={B.beam.q.C} log={L.log} disabled={B.theta === null || !second} closed={!room.state.collect} onOne={() => fire(1)} onMany={() => fire(25)} />
+      {room.state.collect && !second && <div style={{ fontFamily: mono, fontSize: 11, color: C.red, marginTop: 6 }}>waiting for the presenter to add the second glass</div>}
+      <div style={{ fontFamily: mono, fontSize: 12, color: C.ink, margin: "8px 0" }}>
+        your third number: {st.s3 === null ? "—" : `${(st.s3 + 0.5).toFixed(2)} − ½ = ${fmt(st.s3)}`}
+      </div>
+      <PhoneBall view={view} dots={[...others, ...mine]} demo={tilt > 0.5 ? demo : null} />
+      <Notice>{!tilted ? "Your beam is the gold dot with your name. Its answer minus ½ is a third number — up for one circular beam, down for the other, zero for every linear or noisy one. Stokes kept exactly these three tallies." : "Tilted, the disk is a ball: your third number is the height. Pure beams on the surface, mixtures inside. Poincaré's sphere (1892), Bloch's ball (1946) — the Bernoulli ball. Same ball."}</Notice>
     </div>
   );
 }
@@ -4122,21 +4289,247 @@ function RoomStep19({ room }) {
     <div>
       <p>The presenter holds one pure beam. Each phone now bumps its delay by a random amount — the kind of thing a noisy room does to a qubit. Watch the room's average pointer shrink.</p>
       <PhoneBall view={view} dots={minePt ? [{ sv: minePt, color: C.gold, mine: true, tag: room.tag }] : []} demo={pure} />
-      <div style={{ marginTop: 8 }}><Btn onClick={() => setNoise({ delta: Math.round(Math.random() * 360) })}>{typeof noise.delta === "number" ? `my noise: ${noise.delta}° — roll again` : "add my noise"}</Btn></div>
+      <div style={{ marginTop: 8 }}><Btn disabled={!room.state.collect} onClick={() => setNoise({ delta: Math.round(Math.random() * 360) })}>{typeof noise.delta === "number" ? `my noise: ${noise.delta}° — roll again` : "add my noise"}</Btn></div>
       <Notice>Every phone's copy is still pure — on the surface. The average of the room is not. That is what happens to a qubit in a noisy room. Thank you for being the noise.</Notice>
     </div>
   );
 }
 
+// ═══════════════ the text beats: opening, dividers, recaps (phone side) ═══════════════
+function RoomStepWelcome({ room }) {
+  return (
+    <div>
+      <p>You are in. Your coin is <strong style={{ fontFamily: mono }}>{room.tag}</strong>{room.me ? <>, seat <strong>#{room.me.slot}</strong></> : null}. Keep this page open: it follows the big screen, and every scene fills in with <em>your</em> coin and <em>your</em> beam.</p>
+      <Notice>Nothing to do yet. When a scene wants you, a button appears here, and the presenter's ▶ opens it.</Notice>
+    </div>
+  );
+}
+function RoomStepHow() {
+  return (
+    <div>
+      <p>The rhythm of every scene: the presenter frames it (a minute or two), you play on this phone (a few minutes), the room regroups on the surprise.</p>
+      <p>Your taps land on the big screen. Your own dot is the one marked with your coin; the line is everybody together.</p>
+      <Notice>Three Acts: coins, light, glass. Each Act ends with a one-breath recap on this page too.</Notice>
+    </div>
+  );
+}
+function RoomStepFilm({ n }) {
+  return (
+    <div>
+      <p>Watch the film on the screen.</p>
+      {n === 1
+        ? <p>Brian Cox, asked to state the rules of quantum mechanics inside a minute. Listen for two claims: <strong>one simple probabilistic rule</strong>, and <strong>little quantities you add up</strong>.</p>
+        : <p>Will Oliver and Jeff Grover, MIT. Listen for two more: qubits live <strong>anywhere on a sphere's surface</strong>, and quantum power is <strong>parallelism plus interference</strong>.</p>}
+      <Notice>Both films are honest, and both ask you to take nearly everything on faith. Today fixes that.</Notice>
+    </div>
+  );
+}
+function RoomStepClaims() {
+  const claims = [["№ 1", "nature's basic rule is probabilistic"], ["№ 2", "beneath the probabilities sit little quantities: added first, squared last"], ["№ 3", "a qubit lives anywhere on the surface of a ball"], ["№ 4", "quantum power = parallelism + interference"]];
+      return (
+    <div>
+      <p>The contract. Four claims, taken on faith for now, redeemed one by one.</p>
+      <div style={{ fontFamily: mono, fontSize: 12 }}>{claims.map(([k, v]) => <div key={k} style={{ display: "flex", gap: 10, padding: "6px 0", borderBottom: `1px solid ${C.gridBold}` }}><strong style={{ color: C.gold, minWidth: 30 }}>{k}</strong><span>{v}</span></div>)}</div>
+      <Notice>Nothing today is postulated. You build the qubit with your own hands, from a coin, a lamp and a block of glass.</Notice>
+    </div>
+  );
+}
+function RoomStepAct({ room, act }) {
+  const txt = {
+    1: ["Act I · coins", "Flip, count, bet, and refuse to be sloppy. You hold three coins today: a fair one, a mystery one, and one of your own. Two kinds of not-knowing will appear; two numbers will keep them apart."],
+    2: ["Act II · light", "A lamp, striped sheets, a detector. Your seat holds a beam with a secret angle; you will send it through the sheets one photon at a time. The coin's two numbers come back, and light signs the second one."],
+    3: ["Act III · glass", "The same beams, one new object: a block of glass with no stripes. It absorbs nothing, and still the sheets cannot read what left it. A third question, a third number, and the disk becomes a ball."],
+  }[act];
+  return (
+    <div>
+      <p><strong>{txt[0]}.</strong> {txt[1]}</p>
+      <Notice>{act === 1 ? `Your coin: ${room.tag}. Flipping starts on the next slide.` : act === 2 ? "Your beam's angle came with your seat. Nobody knows it, not even you." : "Same seat, same beam. One more question to ask it."}</Notice>
+    </div>
+  );
+}
+function RoomRecapI({ room }) {
+  let flips = { A: [], B: [], C: [] };
+  try { const v = JSON.parse(sessionStorage.getItem("pf-flips-" + room.session)); if (v && v.A) flips = v; } catch (e) {}
+  const COL = { A: C.teal, B: C.violet, C: C.gold }, NAME = { A: "A · fair", B: "B · mystery", C: "C · your own" };
+  const rows = ["A", "B", "C"].map((r) => { const s = flips[r] || [], n = s.length, h = s.filter((v) => v).length, p = n ? h / n : null; return { r, n, h, p }; });
+  const dots = rows.filter((x) => x.p !== null).map((x) => ({ p: x.p, w: sigOf(x.p), color: COL[x.r] }));
+  return (
+    <div>
+      <p><strong>One number cannot tell luck from ignorance; two can.</strong> And the two draw a half-disk nobody ordered.</p>
+      <StatePlot showSemicircle scatter={dots} />
+      <div style={{ fontFamily: mono, fontSize: 12 }}>{rows.map((x) => <div key={x.r} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: `1px solid ${C.gridBold}` }}><span style={{ color: COL[x.r], fontWeight: 600 }}>{NAME[x.r]}</span><span>{x.p === null ? "no flips" : `p ${x.p.toFixed(2)} · bandwidth ${sigOf(x.p).toFixed(2)}`}</span></div>)}</div>
+      <Notice>Your three coins on the rim: each one fully known after ten flips. Rim: coins you know. Floor: the mystery coins, pooled to the centre. Inside: everything in between. Two doubts to carry into Act II: why <em>this</em> second number, and half of <em>what</em>?</Notice>
+    </div>
+  );
+}
+function RoomRecapII({ room }) {
+  const R = useLightRound(room);
+  const lr = R.lr.C || {}, t0 = lr["0"], t45 = lr["45"];
+  const p0 = t0 && t0.n ? t0.passed / t0.n : null, p45 = t45 && t45.n ? t45.passed / t45.n : null;
+  return (
+    <div>
+      <p><strong>Light kept the coin's two numbers, and signed the second one.</strong> The half-disk was a fold; the 45° sheet opens it into a circle.</p>
+      <StatePlot showLower showSemicircle showFullCircle point={p0 !== null ? [p0, p45 !== null ? p45 - 0.5 : sigOf(p0)] : null} />
+      <div style={{ fontFamily: mono, fontSize: 12, marginTop: 6 }}>your secret beam · 0° sheet: {p0 === null ? "—" : p0.toFixed(2)} · 45° sheet − ½: {p45 === null ? "—" : fmt(p45 - 0.5)}</div>
+      <Notice>Doubt (i): bandwidth is the right second number because a sheet on the dial measures it directly, p₄₅ − ½. Doubt (ii): half of a circle: every beam has a mirror twin the 0° sheet cannot tell apart; the 45° sheet can.</Notice>
+    </div>
+  );
+}
+// ── SCENE 4b · mixing beliefs, 12 · twins, 13 · which end / the sign, 16 · the needle in full: the standalone playgrounds, on your own phone ──
+function RoomStepMix() { return <div><p>Believe one candidate coin with some weight and another with the rest: both scores average, so the belief slides along the <strong>chord</strong>. Try it: this one is yours to play with.</p><StepMix /></div>; }
+function RoomStepTwinsView() { return <div><p>Every beam P has a mirror twin P′ with the same legs, so the same clicks through the 0° sheet. What differs is the turning. Drag P.</p><StepTwins /></div>; }
+function RoomStepAsk() { return <div><p>A sheet at angle φ is a <strong>diameter</strong> of the circle, at 2φ. A photon is never asked where it is, only <em>which end</em>. Drag P and the diameter.</p><StepMeasure /></div>; }
+function RoomStepSignView() { return <div><p>Why the 0° sheet is blind to the sign: its two ends sit on the mirror line, so P and its twin answer alike. Tilt the diameter and they split.</p><StepSign /></div>; }
+function RoomStepNeedleFull() { return <div><p>The needle in full: two sizes and a delay, (a, b·e<sup>iδ</sup>). Jones wrote it in 1941; it is the qubit's state. Turn it yourself.</p><StepBloch /></div>; }
+
+// ── SCENE 14 : the glass bench, one preset per slide. Sheet 1 at 45°, something (or nothing) in between, sheet 2 yours to turn ──
+const GPRE = {
+  striped: { glass: false, delay: 90, undo: false, phi: 45 },
+  turn:    { glass: true,  delay: 180, undo: false, phi: 135 },
+  glass:   { glass: true,  delay: 90, undo: false, phi: 45 },
+  undo:    { glass: true,  delay: 90, undo: true,  phi: 45 },
+  wave:    { glass: true,  delay: 90, undo: false, phi: 45 },
+};
+function RoomStepGlass({ preset }) {
+  const pre = GPRE[preset] || GPRE.striped;
+  const [phi, setPhi] = useState(pre.phi), [glass, setGlass] = useState(pre.glass), [undo, setUndo] = useState(pre.undo);
+  useEffect(() => { setPhi(pre.phi); setGlass(pre.glass); setUndo(pre.undo); }, [preset]);
+  const delta = glass ? (undo ? 0 : pre.delay) : 0;
+  const T = Room.passProb(45, delta, phi);
+  const dName = pre.delay === 180 ? "½ turn" : "¼ turn";
+  const block = (x, label, flip) => <g><path d={flip ? `M ${x - 13} 30 L ${x + 13} 30 L ${x + 4} 70 L ${x - 22} 70 Z` : `M ${x - 13} 30 L ${x + 13} 30 L ${x + 22} 70 L ${x - 4} 70 Z`} fill="#EAF3FA" stroke={C.ink} strokeWidth="1.5" /><text x={x} y={22} textAnchor="middle" fontFamily={mono} fontSize="9" fill={C.inkSoft}>{label}</text></g>;
+  const copy = {
+    striped: ["Baseline, nothing new. Sheet 1 diagonal; turn sheet 2: 100% aligned, half at 90° apart, nothing when crossed, as on scene 7.", "Read the detector as you turn: the reading rides Malus's curve. Keep these three numbers, 100 / 50 / 0, as the fingerprint of a striped beam."],
+    turn: ["A tamer glass first: between the sheets, a block set to half a turn. Turn sheet 2 and find where the light now comes out whole.", "100% has moved to 135°: the glass turned the direction without throwing anything away. A sheet turns by asking and discarding; the glass turns by transforming. A turn can be undone; a sheet's loss cannot."],
+    glass: ["Fresnel's move (1817): the same glass, a quarter of the turn. Sheet 1 diagonal, the glass in. Turn sheet 2.", "Every angle reads 50%. Nothing was absorbed, yet no sheet can find a direction. Lamplight does this too, and so did the mystery room. One point on the disk, two different things."],
+    undo: ["Kill the obvious guess. A second glass, reversed, stands behind the first. Turn sheet 2 again.", "100 / 50 / 0 is back, as if nothing stood there. Noise cannot be undone; this could. Whatever the glass did, it kept everything: the beam was pure all along."],
+    wave: ["What the glass does to the wave: the H and V wiggles are both still there at full size, but the V wiggle runs a quarter beat late. The tip no longer bounces on a line; it goes round.", "Circular light: the thing the disk had no seat for. Take the second glass out and in to see the delay added and removed."],
+  }[preset] || ["", ""];
+  return (
+    <div>
+      <p>{copy[0]}</p>
+      <svg viewBox="0 0 340 112" style={{ width: "100%", background: "#fff", border: `1.5px solid ${C.gridBold}`, borderRadius: 8, display: "block" }}>
+        <circle cx={22} cy={50} r="11" fill="#FDF4EC" stroke={C.gold} strokeWidth="2" />
+        <line x1={34} y1={50} x2={290} y2={50} stroke={C.gridBold} strokeWidth="4" />
+        <PhoneSheet x={62} y={50} size={44} a={45} label="sheet 1 · 45°" />
+        {glass ? block(135, undo ? "glass" : `glass · ${dName}`, false) : <rect x={115} y={28} width={40} height={44} rx="4" fill="none" stroke={C.gridBold} strokeWidth="1.5" strokeDasharray="4 3" />}
+        {glass && undo && block(183, "reversed", true)}
+        <PhoneSheet x={240} y={50} size={44} a={phi} label={`sheet 2 · ${phi}°`} color={C.gold} />
+        <rect x={300} y={10} width={22} height={80} rx="4" fill="#fff" stroke={C.ink} strokeWidth="1.5" />
+        <rect x={302} y={12 + 76 * (1 - T)} width={18} height={76 * T} fill={C.gold} rx="3" />
+        <text x={311} y={106} textAnchor="middle" fontFamily={mono} fontSize="10" fontWeight="600" fill={C.ink}>{`${Math.round(T * 100)}%`}</text>
+      </svg>
+      <Slider value={phi} min={0} max={180} step={1} onChange={setPhi} label="sheet 2 · turn it" readout={`${phi}° → ${Math.round(T * 100)}%`} />
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: -4 }}>
+        {[0, 45, 90, 135].map((a) => <Btn key={a} kind={phi === a ? "solid" : "ghost"} onClick={() => setPhi(a)}>{`${a}°`}</Btn>)}
+        {preset !== "striped" && <Btn kind={glass ? "solid" : "ghost"} onClick={() => setGlass((v) => !v)}>{glass ? "glass: in" : "glass: out"}</Btn>}
+        {(preset === "undo" || preset === "wave") && glass && <Btn kind={undo ? "solid" : "ghost"} onClick={() => setUndo((v) => !v)}>{undo ? "second glass: in" : "add the second glass"}</Btn>}
+      </div>
+      <Notice>{copy[1]}</Notice>
+    </div>
+  );
+}
+
+// ── SCENE 16 · rounds A, B, C on the ball: the room's seats replay on the screen; here, your seat's beam for that round ──
+function RoomStepBallRound({ room, round }) {
+  const B = useBeam(room);
+  const st = stokesMine(B);
+  const tilted = !!room.state.tilted, view0 = room.state.view || { az: -35, el: 22 };
+  const view = tilted ? view0 : { az: 0, el: -90 };
+  const info = {
+    fair: { title: "Round A, three questions", beam: "the same 45° beam as everyone", demo: Room.stokes(45, 0), text: "Three questions now: the 0° sheet, the 45° sheet, and the new one, reversed glass then the 45° sheet. The fair beam answers ½, 1, ½: it sits on the rim, and the third number is zero. Tilting the disk changes nothing for it." },
+    mystery: { title: "Round B, three questions", beam: "H or V, by seat, still secret", demo: null, text: "Each seat runs to its corner on the 0° sheet, ½ on the other two. The room pools to the centre of the floor again, and tilting does not lift it: the mystery room is a real mixture, no third number hides it." },
+    sealed: { title: "Round C, sealed", beam: "a sealed beam: a secret angle and a secret delay", demo: null, text: "Nobody tilts a sheet this time; the seats are handed sealed beams. On the disk they land inside, like mixtures. Tilt: the third question lifts every seat to the surface. They were pure from the start; the disk only showed their shadow." },
+    circular: { title: "The extreme case", beam: "the fair beam, through the glass", demo: Room.stokes(45, 90), text: "The 0° sheet: ½. The 45° sheet: ½. Dead on the mystery room's point. Then the third question: 100%. Fair to every sheet on the dial, yet fully known. A coin could only lean; light can hide." },
+  }[round] || {};
+  const mine = st.s1 !== null && st.s2 !== null ? [{ sv: { s1: st.s1, s2: st.s2, s3: st.s3 === null ? 0 : st.s3 }, color: C.gold, mine: true, tag: room.tag }] : [];
+  return (
+    <div>
+      <p><strong>{info.title}.</strong> Your seat holds {info.beam}. {info.text}</p>
+      <PhoneBall view={view} dots={mine} demo={info.demo} />
+      <Notice>{tilted ? "Tilted: the third number is the height. Pure beams on the surface, mixtures inside." : "Face-on, the ball is the disk you know. Wait for the presenter to tilt it."}{mine.length ? " Your gold dot: your own beam, from the photons you sent in Act II and on the previous slide." : ""}</Notice>
+    </div>
+  );
+}
+// ── SCENE 18b/c : two photons: the laptop plays the source; every seat is one of the 24 on the grid ──
+function RoomStepHunt({ room, test }) {
+  return (
+    <div>
+      {!test
+        ? <p>Entangled without knowing it. The source on the laptop hands every seat an answer each round; two seats draw theirs from <strong>one pair of photons</strong>, two more share a card. No single seat can tell: every seat passes about half the time, at every angle.</p>
+        : <p>The same two pairs, now asked <strong>different</strong> questions: each seat independently gets 0°, 60° or 120°. Same angle: both pairs still agree every time. Different angles: the card pair agrees a third of the time at least; the photon pair, a quarter.</p>}
+      <Notice>{!test ? "Watch the grid: the only detector is a comparison. Asked the same question, entangled photons always answer alike, so a pair that never disagrees survives round after round." : "Every single seat is still a 50% coin. The whole effect lives in the ledger of comparisons, assembled afterwards, slower than light."}</Notice>
+    </div>
+  );
+}
+
+// the deck's slides, by their label (room.js publishes state.slide): one participant view per slide
+const SLIDES = {
+  "Title": { t: "Welcome", c: RoomStepWelcome },
+  "How the workshop works": { t: "How this works", c: RoomStepHow },
+  "Film 1": { t: "Film 1", c: RoomStepFilm, p: { n: 1 } },
+  "Film 2": { t: "Film 2", c: RoomStepFilm, p: { n: 2 } },
+  "Four claims": { t: "Four claims", c: RoomStepClaims },
+  "Act I divider": { t: "Act I · coins", c: RoomStepAct, p: { act: 1 } },
+  "Scene 1 · round A": { t: "Round A · the fair coin", c: RoomStep1 },
+  "Scene 1 · round B": { t: "Round B · the mystery coin", c: RoomStep1 },
+  "Scene 1 · round C": { t: "Round C · your own coin", c: RoomStep1 },
+  "Scene 2 · two sources": { t: "Two sources of uncertainty", c: RoomStep2 },
+  "Scene 2 · two words": { t: "Two words for not-knowing", c: RoomStep2, p: { words: true } },
+  "Scene 3 · bandwidth": { t: "The second number", c: RoomStep3 },
+  "Scene 4 · the circle": { t: "The Bernoulli circle", c: RoomStep4 },
+  "Scene 4 · mixing beliefs": { t: "Mixing beliefs", c: RoomStepMix },
+  "Scene 5 · the needle": { t: "The needle", c: RoomStep5 },
+  "Act I recap": { t: "Recap", c: RoomRecapI },
+  "Act II divider": { t: "Act II · light", c: RoomStepAct, p: { act: 2 } },
+  "Scene 7 · lamplight": { t: "The lamp alone", c: RoomStepBench, p: { solo: true } },
+  "Scene 7 · sunglasses": { t: "Two sheets", c: RoomStepBench },
+  "Scene 7d · a third sheet": { t: "A third sheet", c: RoomStepThird },
+  "Scene 7b · what is polarization": { t: "What is polarization", c: RoomStepWave },
+  "Scene 7c · the curve": { t: "Malus's curve", c: RoomStepCurve },
+  "Scene 8 · round A in light": { t: "Round A, in light", c: RoomStepLight },
+  "Scene 8 · round B in light": { t: "Round B, in light", c: RoomStepLight },
+  "Scene 8 · round C in light": { t: "Round C, in light", c: RoomStepLight },
+  "Scene 8 · recap · turn the sheet": { t: "Turn the sheet", c: RoomStepLight },
+  "Scene 11 · a different question": { t: "A different question", c: RoomStepSwap },
+  "Scene 12 · the mirror twins": { t: "The mirror twins", c: RoomStepTwinsView },
+  "Scene 13 · which end": { t: "Which end?", c: RoomStepAsk },
+  "Scene 13 · why the sign hides": { t: "Why the sign hides", c: RoomStepSignView },
+  "Act II recap": { t: "Recap", c: RoomRecapII },
+  "Act III divider": { t: "Act III · glass", c: RoomStepAct, p: { act: 3 } },
+  "Scene 14a · striped light": { t: "Striped light", c: RoomStepGlass, p: { preset: "striped" } },
+  "Scene 14 · the turning glass": { t: "The turning glass", c: RoomStepGlass, p: { preset: "turn" } },
+  "Scene 14c · the glass": { t: "Fresnel's glass", c: RoomStepGlass, p: { preset: "glass" } },
+  "Scene 14d · undo": { t: "Undo", c: RoomStepGlass, p: { preset: "undo" } },
+  "Scene 14e · what the glass shows": { t: "What the glass shows", c: RoomStepGlass, p: { preset: "wave" } },
+  "Scene 16 · the ball": { t: "The ball", c: RoomStep16 },
+  "Scene 16 · round A on the ball": { t: "Round A on the ball", c: RoomStepBallRound, p: { round: "fair" } },
+  "Scene 16 · round B on the ball": { t: "Round B on the ball", c: RoomStepBallRound, p: { round: "mystery" } },
+  "Scene 16 · round C, sealed, on the ball": { t: "Round C, sealed", c: RoomStepBallRound, p: { round: "sealed" } },
+  "Scene 16 · round C on the ball": { t: "Round C on the ball", c: RoomStepBallRound, p: { round: "circular" } },
+  "Scene 16 · the needle in full": { t: "The needle in full", c: RoomStepNeedleFull },
+  "Scene 17 · one photon at a time": { t: "One photon at a time", c: RoomStep17 },
+  "Scene 18 · the receipt": { t: "The receipt", c: RoomStep18 },
+  "Scene 18b · two photons: the hunt": { t: "Two photons: the hunt", c: RoomStepHunt, p: { test: false } },
+  "Scene 18c · two photons: the test": { t: "Two photons: the test", c: RoomStepHunt, p: { test: true } },
+  "Scene 19 · encore": { t: "Encore: the room decoheres", c: RoomStep19 },
+};
+// by scene number: an older deck, or a slide whose label is not in the table above
 const ROOM_STEPS = { 1: RoomStep1, 2: RoomStep2, 3: RoomStep3, 4: RoomStep4, 5: RoomStep5, 6: RoomStep6,
-  7: RoomStep7, 8: RoomStep8, 9: RoomStep9, 10: RoomStep10, 11: RoomStep11, 12: RoomStep12, 13: RoomStep13,
-  14: RoomStep14, 15: RoomStep15, 16: RoomStep16, 17: RoomStep17, 18: RoomStep18, 19: RoomStep19 };
+  7: RoomStepBench, 8: RoomStep8Router, 9: RoomStep9, 10: RoomStep10, 11: RoomStepSwap, 12: RoomStepTwinsView, 13: RoomStepAsk,
+  14: RoomStepGlass, 15: RoomStep15, 16: RoomStep16, 17: RoomStep17, 18: RoomStep18, 19: RoomStep19 };
+const SCENE_TITLES = { 1: "Two coins, one prediction", 2: "Two sources of uncertainty", 3: "The second number", 4: "The Bernoulli circle", 5: "The needle", 7: "The sunglasses bench", 8: "The rounds, in light", 11: "A different question", 12: "The mirror twins", 13: "Which end?", 14: "The glass", 16: "The ball", 17: "One photon at a time", 18: "The receipt", 19: "Encore" };
 
 function RoomApp() {
   const room = useParticipantSafe();
   const session = roomSession();
   const scene = room ? (room.state.scene || 0) : 0;
-  const RoomComp = ROOM_STEPS[scene];
+  const label = room && typeof room.state.slide === "string" ? room.state.slide : null;
+  const entry = label !== null ? SLIDES[label] : null;
+  const RoomComp = entry ? entry.c : ROOM_STEPS[scene];
+  const extraProps = entry && entry.p ? entry.p : {};
+  const kicker = label ? label.split(" · ")[0].toUpperCase() : `SCENE ${scene}`;
+  const title = entry ? entry.t : (label || SCENE_TITLES[scene] || "");
   const fallback = STEPS[SCENE_TO_STEP[scene] ?? 1];
   const Fallback = fallback.comp;
   return (
@@ -4170,10 +4563,10 @@ function RoomApp() {
         ) : (
           <>
             <h2 style={{ fontSize: 21, fontWeight: 600, margin: "0 0 10px" }}>
-              <span style={{ fontFamily: mono, fontSize: 13, color: C.gold, marginRight: 8 }}>{`SCENE ${scene}`}</span>
-              {SCENE_TITLES[scene] || fallback.title}
+              <span style={{ fontFamily: mono, fontSize: 13, color: C.gold, marginRight: 8 }}>{kicker}</span>
+              {title || fallback.title}
             </h2>
-            {RoomComp ? <RoomComp room={room} /> : (
+            {RoomComp ? <RoomComp key={label || scene} room={room} {...extraProps} /> : (
               <>
                 <div style={{ fontFamily: mono, fontSize: 11, color: C.inkSoft, marginBottom: 10 }}>
                   following the presenter · the room version of this scene is not built yet — here is the matching tutorial step
