@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+const { useState, useMemo, useEffect, useRef } = React;   // loaded by next/index.html as a Babel script (no bundler)
 
 // ---------- palette ----------
 const C = {
@@ -3483,7 +3483,99 @@ function RoomJoin({ room }) {
   );
 }
 
-// ── SCENE 1 : two coins, one prediction ──
+// ═══ the phone's slide shell: the deck's layout (kicker · badges · headline · three lines · figure panel), scaled to a phone ═══
+const KICK = "#E37222", KICK_DK = "#EE7203", PALE = "#AFE0F7", NAVY = "#002157", PANEL = "#C9E5F5";
+const GRID_CSS = "repeating-linear-gradient(to right, #E1F3FC 0 1.5px, transparent 1.5px 28px), repeating-linear-gradient(to bottom, #E1F3FC 0 1.5px, transparent 1.5px 28px)";
+const GRID_DK = "repeating-linear-gradient(to right, rgba(255,255,255,0.05) 0 1.5px, transparent 1.5px 32px), repeating-linear-gradient(to bottom, rgba(255,255,255,0.05) 0 1.5px, transparent 1.5px 32px)";
+function Badge({ kind = "claim", children }) {
+  const s = kind === "aha" ? { color: "#7B2D8B", border: "1.5px solid #D9BFE3" } : kind === "dark" ? { color: "#FBE7D8", border: "1.5px solid #EBC98A" } : kind === "aha-dark" ? { color: "#E9D5F0", border: "1.5px solid #B88BC7" } : { color: "#8A5200", border: "1.5px solid #EBC98A", background: "#FDF4E3" };
+  return <span style={{ fontFamily: mono, fontSize: 9.5, letterSpacing: 1.5, borderRadius: 999, padding: "3px 9px", fontWeight: 500, whiteSpace: "nowrap", ...s }}>{children}</span>;
+}
+const Soft = (node) => ({ soft: node });
+function Slide({ kicker, badges, title, lines, dark, children, grid, foot, titleSize = 27 }) {
+  const soft = dark ? PALE : C.inkSoft;
+  return (
+    <div>
+      {kicker && <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8, fontFamily: mono, fontSize: 12, letterSpacing: 3, color: dark ? KICK_DK : KICK, fontWeight: 600 }}><span>{kicker}</span>{badges}</div>}
+      {title && <h2 style={{ fontSize: titleSize, fontWeight: 600, margin: "6px 0 0", letterSpacing: -0.5, lineHeight: 1.12, textWrap: "pretty" }}>{title}</h2>}
+      {lines && lines.length > 0 && <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 14 }}>{lines.map((l, i) => <p key={i} style={{ margin: 0, fontSize: 16.5, lineHeight: 1.5, color: l && l.soft ? soft : "inherit" }}>{l && l.soft ? l.soft : l}</p>)}</div>}
+      {children && <div style={{ marginTop: 16, border: `1px solid ${dark ? "rgba(175,224,247,0.45)" : PANEL}`, borderRadius: 10, background: dark ? "rgba(255,255,255,0.04)" : "#fff", backgroundImage: grid && !dark ? GRID_CSS : "none", padding: 12 }}>{children}</div>}
+      {foot}
+    </div>
+  );
+}
+const Wait = ({ children }) => <div style={{ fontFamily: mono, fontSize: 11, color: C.red, marginTop: 6 }}>{children}</div>;
+/* your own pooled line: fraction of heads, flip by flip (the phone's copy of the big-screen plot) */
+function OwnLine({ seq, col, h = 130 }) {
+  const W = 340, x0 = 28, x1 = 326, y0 = h - 24, y1 = 12, n = Math.max(10, seq.length);
+  const X = (i) => x0 + (i / n) * (x1 - x0), Y = (f) => y0 - f * (y0 - y1);
+  let hds = 0; const pts = seq.map((v, i) => { hds += v; return `${X(i + 1).toFixed(1)},${Y(hds / (i + 1)).toFixed(1)}`; });
+  return (
+    <svg viewBox={`0 0 ${W} ${h}`} style={{ width: "100%", display: "block" }}>
+      <line x1={x0} y1={Y(0.5)} x2={x1} y2={Y(0.5)} stroke={C.ink} strokeWidth="1.2" strokeDasharray="5 4" opacity="0.6" />
+      <line x1={x0} y1={y0} x2={x1} y2={y0} stroke={C.ink} strokeWidth="1.5" /><line x1={x0} y1={y1} x2={x1} y2={y1} stroke={C.inkSoft} strokeWidth="1" />
+      <text x={x0 - 6} y={y1 + 4} textAnchor="end" fontFamily={mono} fontSize="10" fill={C.inkSoft}>1</text><text x={x0 - 6} y={Y(0.5) + 4} textAnchor="end" fontFamily={mono} fontSize="10" fill={C.inkSoft}>½</text><text x={x0 - 6} y={y0 + 4} textAnchor="end" fontFamily={mono} fontSize="10" fill={C.inkSoft}>0</text>
+      {pts.length > 1 && <polyline points={pts.join(" ")} fill="none" stroke={col} strokeWidth="2.5" strokeLinejoin="round" />}
+      {pts.length > 0 && <circle cx={X(seq.length)} cy={Y(hds / seq.length)} r="5" fill={col} stroke={C.ink} strokeWidth="1.5" />}
+      <text x={x1} y={h - 6} textAnchor="end" fontFamily={mono} fontSize="10" fill={C.inkSoft}>{seq.length ? `${seq.length} flips · your own fraction of heads` : "your own line, flip by flip"}</text>
+    </svg>
+  );
+}
+
+// ── SCENE 1 · rounds A, B, C : the flip slide, with your own line ──
+function RoomFlip({ room }) {
+  const round = room.state.round || "A";
+  const token = room.state.resetToken || 0;
+  const storeKey = "pf-flips-" + room.session;
+  const [flips, setFlips] = useState(() => {
+    try { const v = JSON.parse(sessionStorage.getItem(storeKey)); if (v && v.A && v.B && v.C) return v; } catch (e) {}
+    return { A: [], B: [], C: [] };
+  });
+  const [guess, setGuess] = useState(null);
+  const lastToken = useRef(token);
+  const me = room.me;
+  const tallyOf = (f) => { const o = {}; ["A", "B", "C"].forEach((r) => { o[r] = { n: f[r].length, heads: f[r].filter((v) => v).length }; }); return o; };
+  useEffect(() => { try { sessionStorage.setItem(storeKey, JSON.stringify(flips)); } catch (e) {} room.send("tally", tallyOf(flips)); }, [flips]);
+  useEffect(() => { if (token !== lastToken.current) { lastToken.current = token; setFlips((f) => ({ ...f, [round]: [] })); } }, [token]);
+  const p = round === "A" ? 0.5 : me ? (round === "B" ? me.face : me.bias) : null;
+  const seq = flips[round] || [];
+  const col = round === "A" ? C.teal : round === "B" ? C.violet : C.gold;
+  const nH = seq.filter((v) => v).length;
+  const closed = !room.state.collect;
+  const flip = () => { if (p === null || closed) return; setFlips((f) => ({ ...f, [round]: [...f[round], flipOne(p)] })); };
+  const copy = {
+    A: { title: "Everyone flips the same fair coin", lines: [<>Before you flip: what do you expect the pooled line to do?</>, <>Tap <strong>Flip</strong> ten times. Every tap lands on the big screen.</>, Soft(<>The honest statement before flipping is a bet: 50%. The line tells us whether the bet was any good.</>)] },
+    B: { title: "Everyone flips a mystery coin", lines: [<>Your coin always lands the same way. Which way? Nobody knows — not even you.</>, <>Ten flips. Your own line is flat; the room's still says ½.</>, Soft(<>No luck in this coin at all — only ignorance. Same 50%.</>)] },
+    C: { title: "Everyone flips their own secret coin", lines: [<>Your phone now holds a coin with a bias you cannot see.</>, <>Ten flips again. Same pooled forecast?</>, Soft(<>Both rounds say 50%. Do you believe the same thing in both?</>), Soft(<>A coin keeps one kind of secret: which way it leans. Hold that.</>)] },
+  }[round];
+  const chip = (g) => <button key={g} onClick={() => setGuess(g)} style={{ fontFamily: mono, fontSize: 11, padding: "5px 10px", borderRadius: 12, cursor: "pointer", border: `1.5px solid ${guess === g ? C.gold : C.gridBold}`, background: guess === g ? C.goldSoft : "#fff", color: C.ink }}>{g}</button>;
+  return (
+    <Slide kicker={`SCENE 1 · ROUND ${round}`} badges={round === "A" ? <Badge>CLAIM № 1 · SIGHTED</Badge> : null} title={copy.title} lines={copy.lines} grid>
+      <div style={{ fontFamily: mono, fontSize: 12, fontWeight: 600, textAlign: "center", color: C.ink }}>{`round ${round} · your coin ${room.tag}`}</div>
+      <OwnLine seq={seq} col={col} />
+      {round === "A" && seq.length < 10 && (
+        <div style={{ margin: "8px 0 4px" }}>
+          <div style={{ fontFamily: mono, fontSize: 10.5, letterSpacing: 1, color: C.gold, marginBottom: 6 }}>BEFORE YOU FLIP — what will ten flips look like?</div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>{["mostly heads", "neat alternation", "clumpy and messy"].map(chip)}</div>
+        </div>
+      )}
+      {round === "A" && seq.length >= 10 && guess && <div style={{ fontFamily: mono, fontSize: 11.5, color: C.inkSoft, margin: "8px 0 4px" }}>you guessed <strong style={{ color: C.ink }}>{guess}</strong> — you got {seq.slice(0, 10).map((v) => (v ? "H" : "T")).join("")}</div>}
+      <div style={{ display: "flex", alignItems: "center", gap: 14, margin: "10px 0 6px" }}>
+        <button onClick={flip} disabled={p === null || closed} style={{ width: 92, height: 92, borderRadius: "50%", cursor: p === null || closed ? "default" : "pointer", fontFamily: mono, fontWeight: 700, fontSize: 18, color: "#fff", border: `3px solid ${C.ink}`, opacity: p === null || closed ? 0.4 : 1, background: `radial-gradient(circle at 35% 30%, #FFAE5E, ${col})`, flex: "none" }}>Flip</button>
+        <div>
+          <div style={{ fontFamily: mono, fontSize: 12, color: C.inkSoft }}>{`${seq.length} flips`}</div>
+          <div style={{ fontFamily: mono, fontSize: 22, fontWeight: 600 }}>{seq.length ? `${nH} heads · ${(nH / seq.length).toFixed(2)}` : "—"}</div>
+          {p === null && <Wait>waiting for your seat number…</Wait>}
+          {p !== null && closed && <Wait>waiting for the presenter to press ▶</Wait>}
+          {seq.length >= 10 && <div style={{ fontFamily: mono, fontSize: 11, color: C.teal, marginTop: 4 }}>ten done ✓ — look at the big screen</div>}
+        </div>
+      </div>
+      <div style={{ minHeight: 30 }}>{seq.slice(-40).map((v, i) => <CoinChip key={i} v={v} />)}</div>
+    </Slide>
+  );
+}
+
+// ── SCENE 1 : two coins, one prediction (older deck: scene-number fallback) ──
 function RoomStep1({ room }) {
   const round = room.state.round || "A";
   const token = room.state.resetToken || 0;
@@ -3589,7 +3681,111 @@ function RoomSlider({ room, own, setOwn, label }) {
   );
 }
 
-// ── SCENE 2 : two sources of uncertainty (and 2b: the two words, with your own bandwidth per round) ──
+// ── SCENE 2 · two sources / two words : every round's fractions on one axis, yours marked ──
+function RoundStrip({ room, rounds = ["A", "B", "C"] }) {
+  const W = 340, x0 = 30, x1 = 310, X = (f) => x0 + f * (x1 - x0);
+  const COL = { A: C.teal, B: C.violet, C: C.gold }, NAME = { A: "round A · fair coin", B: "round B · mystery coin", C: "round C · secret coin" };
+  const H = 25 + rounds.length * 85;
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", display: "block" }}>
+      {rounds.map((r, k) => { const y = 75 + k * 85, all = aggRound(room, r), me = myAgg(room, r); const mean = all.length ? all.reduce((a, x) => a + x.heads, 0) / all.reduce((a, x) => a + x.n, 0) : null; return (
+        <g key={r}>
+          <text x={x0} y={y - 40} fontFamily={mono} fontSize="11" fill={C.ink} fontWeight="600">{NAME[r]}</text>
+          <line x1={x0} y1={y} x2={x1} y2={y} stroke={C.inkSoft} strokeWidth="1.5" />
+          <line x1={X(0.5)} y1={y - 30} x2={X(0.5)} y2={y + 8} stroke={C.inkSoft} strokeWidth="1" strokeDasharray="4 3" />
+          {all.map((x) => <circle key={x.slot} cx={X(x.heads / x.n)} cy={y - 6} r={5} fill={COL[r]} opacity={0.25} />)}
+          {me && <g><circle cx={X(me.heads / me.n)} cy={y - 6} r={7} fill={COL[r]} stroke={C.ink} strokeWidth="1.5" /><text x={X(me.heads / me.n)} y={y - 18} textAnchor="middle" fontSize="14">{room.tag}</text></g>}
+          {mean !== null && <polygon points={`${X(mean)},${y + 1} ${X(mean) - 5},${y + 10} ${X(mean) + 5},${y + 10}`} fill={C.ink} />}
+        </g>); })}
+      <text x={x0} y={H - 5} fontFamily={mono} fontSize="10" fill={C.inkSoft}>0</text><text x={X(0.5)} y={H - 5} textAnchor="middle" fontFamily={mono} fontSize="10" fill={C.inkSoft}>½</text><text x={x1} y={H - 5} textAnchor="end" fontFamily={mono} fontSize="10" fill={C.inkSoft}>1</text>
+    </svg>
+  );
+}
+function RoomTwoSources({ room, words }) {
+  const COL = { A: C.teal, B: C.violet, C: C.gold }, NAME = { A: "A · fair", B: "B · mystery", C: "C · secret" };
+  const rows = ["A", "B", "C"].map((r) => { const me = myAgg(room, r); return { r, me, p: me && me.n ? me.heads / me.n : null }; });
+  if (!words) return (
+    <Slide kicker="SCENE 2 · TWO SOURCES OF UNCERTAINTY" badges={<Badge kind="aha">✳ AHA MOMENT</Badge>} title="Same forecast, different knowledge"
+      lines={[<>One number per participant: the fraction of heads, shadowed on the axis. The room's is their average — ½ in every round.</>, <>The second number, <strong>± E(sd)</strong>, lifts each coin off the axis. Round A rises to the rim. Round B never leaves the axis. Round C: some rise, some stay.</>, Soft(<>One number cannot tell luck from ignorance — two can.</>)]}>
+      <RoundStrip room={room} />
+      <div style={{ fontFamily: mono, fontSize: 10.5, color: C.inkSoft, marginTop: 4 }}>your coin is the marked dot · the triangle is the room's average</div>
+    </Slide>
+  );
+  return (
+    <Slide kicker="SCENE 2 · TWO WORDS FOR NOT-KNOWING" badges={<Badge kind="aha">✳ AHA MOMENT</Badge>} title="Knowledge shrinks one kind of bandwidth — not the other"
+      lines={[<>Dashed: the room as one anonymous bag of flips, ± sd — every round climbs to the rim, ≈ ½.</>, <>Solid: the bookkeeper knows <strong>whose flip is whose</strong>, ± E(sd). Round A: the paths coincide — the luck is in the throw and stays: <strong>statistical</strong> (aleatoric). Round B: the solid path never leaves the axis — only a fact not yet learned: <strong>systematic</strong> (epistemic).</>, Soft(<>Round C ends partway inside. What information removes was epistemic; what survives is aleatoric.</>)]}>
+      <div style={{ fontFamily: mono, fontSize: 11, fontWeight: 600, color: C.ink, marginBottom: 4 }}>your own bandwidth, round by round</div>
+      <div style={{ fontFamily: mono, fontSize: 11.5 }}>{rows.map((x) => <div key={x.r} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: `1px solid ${C.gridBold}` }}><span style={{ color: COL[x.r], fontWeight: 600 }}>{NAME[x.r]}</span><span>{x.p === null ? "no flips" : `${x.me.heads}/${x.me.n} · p ${x.p.toFixed(2)} · √(p(1−p)) = ${sigOf(x.p).toFixed(2)}`}</span></div>)}</div>
+      <div style={{ fontFamily: mono, fontSize: 10.5, color: C.inkSoft, marginTop: 8 }}>the room's ± E(sd) is the average of rows like yours; its ± sd forgets whose flip is whose</div>
+    </Slide>
+  );
+}
+// ── SCENE 3 · one number is not enough ──
+function RoomBandwidth({ room }) {
+  const showBand = !!room.state.showBandAxis, showPooled = !!room.state.showPooled;
+  const A = aggRound(room, "A").map((x) => dotOf(x, C.teal)), B = aggRound(room, "B").map((x) => dotOf(x, C.violet)), Cc = aggRound(room, "C").map((x) => dotOf(x, C.gold));
+  const mC = myAgg(room, "C");
+  const scatter = [...A, ...B, ...Cc].map((d) => ({ ...d, w: showBand ? d.w : 0 }));
+  const cents = showPooled && showBand ? [meanDot(A, C.teal), meanDot(B, C.violet), meanDot(Cc, C.gold)].filter(Boolean) : [];
+  return (
+    <Slide kicker="SCENE 3 · ONE NUMBER IS NOT ENOUGH" badges={<Badge kind="aha">✳ AHA MOMENT</Badge>} title="Add one honest number and a shape appears"
+      lines={[<>Odds on the x-axis. Bandwidth — the spread you expect — on the y-axis.</>, <>Every fully known coin lands on the same arc.</>, Soft(<>The mystery coins sit in the corners and pool to the centre. A coin you only know on average lands inside. One number added; a shape appeared.</>)]}>
+      <StatePlot showSemicircle={showBand} scatter={scatter} centroids={cents} point={mC ? [mC.heads / mC.n, showBand ? sigOf(mC.heads / mC.n) : 0] : null} />
+      <div style={{ fontFamily: mono, fontSize: 10.5, color: C.inkSoft, marginTop: 6 }}>{showBand ? "second axis: bandwidth √(p(1−p)) · the marked dot is your round-C coin" : "one axis: every round is one pile around ½ · waiting for the presenter to add the second number…"}{showPooled && showBand ? " · big dots: each round pooled" : ""}</div>
+    </Slide>
+  );
+}
+// ── SCENE 4 · the Bernoulli circle ──
+function RoomCircle({ room }) {
+  const [own, setOwn] = useState(null);
+  const p = own === null ? (room.state.p ?? 0.5) : own;
+  const B = aggRound(room, "C").map((x) => ({ ...dotOf(x, C.gold), color: "#F3C9A0" }));
+  return (
+    <Slide kicker="SCENE 4 · THE BERNOULLI CIRCLE" badges={<Badge>CLAIM № 3 · SIGHTED</Badge>} title="Known coins live on the rim"
+      lines={[<>Slide p. The dot never leaves the arc.</>, <>Every coin you fully know sits on the rim. Every coin you don't sits inside.</>, Soft(<>Technical aside: the arc length between two beliefs is how well a run of throws can tell them apart.</>)]}>
+      <StatePlot point={[p, sigOf(p)]} scatter={B} />
+      <RoomSlider room={room} own={own} setOwn={setOwn} label="p" />
+      <div style={{ fontFamily: mono, fontSize: 10.5, color: C.inkSoft }}>faded gold: the room's round-C coins</div>
+    </Slide>
+  );
+}
+// ── SCENE 4 · mixing beliefs ──
+function RoomMixing({ room }) {
+  const [q1, setQ1] = useState(0.9), [q2, setQ2] = useState(0.2), [c, setC] = useState(0.6), [showRoom, setShowRoom] = useState(false);
+  const bp = c * q1 + (1 - c) * q2, bw = c * sigOf(q1) + (1 - c) * sigOf(q2);
+  const coins = aggRound(room, "C").map((x) => dotOf(x, "#F3C9A0"));
+  const mix = meanDot(coins, C.gold);
+  return (
+    <Slide kicker="SCENE 4 · MIXING BELIEFS" title="Blends fill the half-disk"
+      lines={[<>Believe q₁ with some weight, q₂ with the rest: your belief slides along the chord.</>, <>All chords together fill the interior — the half-disk is the space of every honest belief.</>, Soft(<>Rim: randomness that stays. Depth: ignorance that flips can cure.</>)]}>
+      <StatePlot segment={[[q1, sigOf(q1)], [q2, sigOf(q2)]]} point={[bp, bw]} scatter={showRoom ? coins : []} centroids={showRoom && mix ? [mix] : []} labels={false} />
+      <Slider value={q1} min={0} max={1} step={0.01} onChange={setQ1} label="q₁ · first candidate" readout={q1.toFixed(2)} />
+      <Slider value={q2} min={0} max={1} step={0.01} onChange={setQ2} label="q₂ · second candidate" readout={q2.toFixed(2)} />
+      <Slider value={c} min={0} max={1} step={0.01} onChange={setC} label="weight on q₁" readout={`${c.toFixed(2)} → belief (${bp.toFixed(2)}, ${bw.toFixed(2)})`} />
+      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+        <Btn kind={showRoom ? "solid" : "ghost"} onClick={() => setShowRoom((v) => !v)}>{showRoom ? "hide the room" : "show the room"}</Btn>
+        {showRoom && <span style={{ fontFamily: mono, fontSize: 10.5, color: C.inkSoft }}>every round-C coin is pure, on the rim; mixed with equal weight the room's belief drops inside</span>}
+      </div>
+    </Slide>
+  );
+}
+// ── SCENE 5 · from the state's own point of view ──
+function RoomNeedle({ room }) {
+  const [own, setOwn] = useState(null);
+  const p = own === null ? (room.state.p ?? 0.5) : own;
+  const th = Math.atan2(Math.sqrt(1 - p), Math.sqrt(p)) * 180 / Math.PI;
+  return (
+    <Slide kicker="SCENE 5 · FROM THE STATE'S OWN POINT OF VIEW" badges={<><Badge>CLAIM № 2 · SIGHTED</Badge><Badge kind="aha">✳ AHA MOMENT</Badge></>} title="Opposite beliefs become perpendicular beliefs"
+      lines={[<>The pointer: centre to state, angle 2θ.</>, <>The needle: the same arrow seen from the state, angle θ — always-H and always-T at right angles.</>, Soft(<>Add the components, then square. Hold on to that.</>)]}>
+      <StatePlot point={[p, sigOf(p)]} showChords showCenterVector />
+      <NeedleView p={p} />
+      <RoomSlider room={room} own={own} setOwn={setOwn} label="p" />
+      <div style={{ fontFamily: mono, fontSize: 11, color: C.ink }}>pointer 2θ = {(2 * th).toFixed(0)}° · needle θ = {th.toFixed(0)}° · (√p, √(1−p)) = ({Math.sqrt(p).toFixed(2)}, {Math.sqrt(1 - p).toFixed(2)})</div>
+    </Slide>
+  );
+}
+
+// ── SCENE 2 : two sources of uncertainty (older deck: scene-number fallback) ──
 function RoomStep2({ room, words }) {
   const W = 340, x0 = 30, x1 = 310, X = (f) => x0 + f * (x1 - x0);
   const COL = { A: C.teal, B: C.violet, C: C.gold };
@@ -4297,69 +4493,103 @@ function RoomStep19({ room }) {
 
 // ═══════════════ the text beats: opening, dividers, recaps (phone side) ═══════════════
 function RoomStepWelcome({ room }) {
+  const cell = (k, v) => <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}><span style={{ fontFamily: mono, fontSize: 9.5, letterSpacing: 2, color: PALE }}>{k}</span><span style={{ fontFamily: mono, fontSize: 20, fontWeight: 600, color: "#fff" }}>{v}</span></div>;
   return (
-    <div>
-      <p>You are in. Your coin is <strong style={{ fontFamily: mono }}>{room.tag}</strong>{room.me ? <>, seat <strong>#{room.me.slot}</strong></> : null}. Keep this page open: it follows the big screen, and every scene fills in with <em>your</em> coin and <em>your</em> beam.</p>
-      <Notice>Nothing to do yet. When a scene wants you, a button appears here, and the presenter's ▶ opens it.</Notice>
-    </div>
+    <Slide dark kicker="TAKE YOUR SEAT">
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, padding: "10px 0 6px", textAlign: "center" }}>
+        <img src="../presentation/icon-dark.png" alt="" style={{ width: 84, height: 84 }} />
+        <h1 style={{ fontSize: 36, fontWeight: 700, margin: 0, letterSpacing: -1, lineHeight: 1.05 }}>Build your own qubit</h1>
+        <p style={{ fontFamily: mono, fontSize: 12.5, color: PALE, margin: 0 }}>fifteen steps from a coin flip, via light, to a qubit</p>
+        <p style={{ fontFamily: mono, fontSize: 11, color: KICK_DK, margin: 0 }}>a hands-on workshop · you drive, the slides guide</p>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginTop: 14, padding: "12px 14px", border: `1.5px solid ${PALE}`, borderRadius: 10 }}>
+        {cell("COIN", room.tag)}{cell("SEAT", room.me ? `#${room.me.slot}` : "…")}{cell("SESSION", room.session)}
+      </div>
+      <p style={{ fontFamily: mono, fontSize: 10.5, color: PALE, margin: "10px 0 0", textAlign: "center" }}>keep this page open · it follows the big screen, filled with your own coin and beam</p>
+    </Slide>
   );
 }
 function RoomStepHow() {
+  const acts = [["ACT I", "A coin, honestly kept", "scenes 1–5"], ["ACT II", "Light, nature’s second example", "scenes 7–13"], ["ACT III", "A block of glass — the disk becomes a ball", "scenes 14–16"], ["CODA", "One photon at a time · the receipt · two photons", "scenes 17–18"]];
   return (
-    <div>
-      <p>The rhythm of every scene: the presenter frames it (a minute or two), you play on this phone (a few minutes), the room regroups on the surprise.</p>
-      <p>Your taps land on the big screen. Your own dot is the one marked with your coin; the line is everybody together.</p>
-      <Notice>Three Acts: coins, light, glass. Each Act ends with a one-breath recap on this page too.</Notice>
-    </div>
+    <Slide kicker="HOW THIS WORKSHOP WORKS" title="You play the scenes — the slides mark the waypoints"
+      lines={[<>This page is your tutorial — it follows the screen, every scene here is interactive, and playing with it <strong>is</strong> the workshop.</>, <>Per scene: a short framing on the screen, a few minutes of hands-on play here, then we regroup on what surprised us.</>, Soft(<>The creed of the day: we never <em>add</em> anything quantum. We only keep details — and let light audit the books.</>)]}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {acts.map(([a, t, s]) => <div key={a} style={{ display: "flex", gap: 10, alignItems: "baseline", padding: "8px 10px", border: `1px solid ${PANEL}`, borderRadius: 8 }}><span style={{ fontFamily: mono, fontSize: 11, letterSpacing: 1.5, color: KICK, fontWeight: 600, flex: "none", width: 54 }}>{a}</span><span style={{ fontSize: 14.5, flex: 1 }}>{t}</span><span style={{ fontFamily: mono, fontSize: 10, color: C.inkSoft, flex: "none" }}>{s}</span></div>)}
+      </div>
+    </Slide>
   );
 }
 function RoomStepFilm({ n }) {
+  const f = n === 1 ? { title: "Quantum mechanics in sixty seconds", cap: "Brian Cox, challenged on BBC radio to state the rules inside a minute", url: "https://www.youtube.com/watch?v=fcfQkxwz4Oo", listen: ["one simple probabilistic rule", "little quantities … you add them up"] }
+    : { title: "Quantum explained — MIT", cap: "Will Oliver & Jeff Grover on what quantum computing is", url: "https://www.youtube.com/watch?v=jk0jWzlvA5w", listen: ["qubits live anywhere on the surface of planet Earth", "quantum power = parallelism + interference"] };
   return (
-    <div>
-      <p>Watch the film on the screen.</p>
-      {n === 1
-        ? <p>Brian Cox, asked to state the rules of quantum mechanics inside a minute. Listen for two claims: <strong>one simple probabilistic rule</strong>, and <strong>little quantities you add up</strong>.</p>
-        : <p>Will Oliver and Jeff Grover, MIT. Listen for two more: qubits live <strong>anywhere on a sphere's surface</strong>, and quantum power is <strong>parallelism plus interference</strong>.</p>}
-      <Notice>Both films are honest, and both ask you to take nearly everything on faith. Today fixes that.</Notice>
-    </div>
+    <Slide dark kicker={`WATCH FIRST · FILM ${n} OF 2`} title={f.title} titleSize={30}>
+      <p style={{ fontFamily: mono, fontSize: 12, color: PALE, margin: 0, textAlign: "center" }}>{f.cap}</p>
+      <div style={{ fontFamily: mono, fontSize: 10.5, letterSpacing: 2, color: KICK_DK, margin: "16px 0 6px" }}>LISTEN FOR TWO CLAIMS</div>
+      {f.listen.map((l, i) => <p key={i} style={{ margin: "4px 0", fontSize: 16 }}>“{l}”</p>)}
+      <p style={{ fontFamily: mono, fontSize: 10.5, color: PALE, margin: "14px 0 0" }}>plays on the big screen · <a href={f.url} target="_blank" rel="noreferrer" style={{ color: KICK_DK }}>watch again later</a></p>
+    </Slide>
   );
 }
 function RoomStepClaims() {
-  const claims = [["№ 1", "nature's basic rule is probabilistic"], ["№ 2", "beneath the probabilities sit little quantities: added first, squared last"], ["№ 3", "a qubit lives anywhere on the surface of a ball"], ["№ 4", "quantum power = parallelism + interference"]];
-      return (
-    <div>
-      <p>The contract. Four claims, taken on faith for now, redeemed one by one.</p>
-      <div style={{ fontFamily: mono, fontSize: 12 }}>{claims.map(([k, v]) => <div key={k} style={{ display: "flex", gap: 10, padding: "6px 0", borderBottom: `1px solid ${C.gridBold}` }}><strong style={{ color: C.gold, minWidth: 30 }}>{k}</strong><span>{v}</span></div>)}</div>
-      <Notice>Nothing today is postulated. You build the qubit with your own hands, from a coin, a lamp and a block of glass.</Notice>
-    </div>
+  const claims = [
+    ["CLAIM № 1 · COX", <>Nature's basic rule is <strong>probabilistic</strong>: particles hop from place to place with a probability given by one simple rule — and the rest of quantum mechanics follows.</>, "sighted scene 1 · caught scene 7 · redeemed scene 17"],
+    ["CLAIM № 2 · COX", <>The rule doesn't work with probabilities directly: beneath each sits a stranger <strong>little quantity</strong> — computed first, added up, turned into odds only at the end.</>, "sighted scene 5 · caught scenes 7 & 14 · redeemed scene 17"],
+    ["CLAIM № 3 · MIT", <>A transistor's bit is a switch — 0 or 1, north pole or south pole. <strong>Qubits, like humans, can be anywhere on the surface of planet Earth.</strong></>, "sighted scene 4 · caught scene 8 · redeemed scene 16"],
+    ["CLAIM № 4 · MIT", <>Quantum power is parallelism plus <strong>interference</strong> — states adding like overlapping waves, right answers enhanced, wrong answers suppressed.</>, "sighted scene 14 · redeemed scene 17"],
+  ];
+  return (
+    <Slide kicker="WATCH FIRST — FOUR REMARKABLE CLAIMS" title="Four claims, taken on faith — until today"
+      foot={<p style={{ fontSize: 16, lineHeight: 1.5, margin: "16px 0 0" }}>The promise of the day: <strong>you will not be asked to believe any of these.</strong> You build all four, with your own hands, starting from nothing but coin flips.</p>}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {claims.map(([k, t, s]) => <div key={k} style={{ border: `2px solid ${C.gridBold}`, borderRadius: 12, padding: "10px 12px", display: "flex", flexDirection: "column", gap: 6 }}><span style={{ fontFamily: mono, fontSize: 10.5, letterSpacing: 1.5, color: "#C25400", fontWeight: 700 }}>{k}</span><span style={{ fontSize: 14.5, lineHeight: 1.45 }}>{t}</span><span style={{ fontFamily: mono, fontSize: 9.5, color: "#5C6E8F" }}>{s}</span></div>)}
+      </div>
+    </Slide>
   );
 }
 function RoomStepAct({ room, act }) {
-  const txt = {
-    1: ["Act I · coins", "Flip, count, bet, and refuse to be sloppy. You hold three coins today: a fair one, a mystery one, and one of your own. Two kinds of not-knowing will appear; two numbers will keep them apart."],
-    2: ["Act II · light", "A lamp, striped sheets, a detector. Your seat holds a beam with a secret angle; you will send it through the sheets one photon at a time. The coin's two numbers come back, and light signs the second one."],
-    3: ["Act III · glass", "The same beams, one new object: a block of glass with no stripes. It absorbs nothing, and still the sheets cannot read what left it. A third question, a third number, and the disk becomes a ball."],
+  const A = {
+    1: { k: "ACT I · SCENES 1–5", t: "A coin, honestly kept", s: "flip · count · bet · and refuse to be sloppy", cap: "the coins already in the room" },
+    2: { k: "ACT II · SCENES 7–13", t: "Light, nature’s second example", s: "a lamp · two sheets · a detector · and one photon at a time", cap: "the beams already in the room — angles still secret" },
+    3: { k: "ACT III · SCENES 14–16", t: "A block of glass", s: "no stripes · nothing lost · a third question · Poincaré’s sphere", cap: "the same beams — one more question to ask them" },
   }[act];
+  const roster = room.state.roster || {};
+  const seats = Object.keys(roster).map((f) => ({ slot: roster[f].slot, tag: roster[f].tag })).sort((a, b) => a.slot - b.slot);
   return (
-    <div>
-      <p><strong>{txt[0]}.</strong> {txt[1]}</p>
-      <Notice>{act === 1 ? `Your coin: ${room.tag}. Flipping starts on the next slide.` : act === 2 ? "Your beam's angle came with your seat. Nobody knows it, not even you." : "Same seat, same beam. One more question to ask it."}</Notice>
-    </div>
+    <Slide dark kicker={A.k} title={A.t} titleSize={34}>
+      <p style={{ fontFamily: mono, fontSize: 12.5, color: PALE, margin: "0 0 14px", textAlign: "center" }}>{A.s}</p>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center" }}>
+        {seats.map((s) => { const mine = room.me && s.slot === room.me.slot; return <span key={s.slot} title={`seat #${s.slot}`} style={{ width: 34, height: 34, borderRadius: "50%", display: "inline-flex", alignItems: "center", justifyContent: "center", fontFamily: mono, fontSize: 15, fontWeight: 600, color: mine ? "#fff" : PALE, background: mine ? KICK_DK : "transparent", border: `1.5px solid ${mine ? KICK_DK : PALE}` }}>{s.tag}</span>; })}
+        {seats.length === 0 && <span style={{ fontFamily: mono, fontSize: 11, color: PALE }}>waiting for the roster…</span>}
+      </div>
+      <p style={{ fontFamily: mono, fontSize: 10.5, letterSpacing: 1.5, color: PALE, margin: "12px 0 0", textAlign: "center" }}>{A.cap}{room.me ? ` · you are ${room.tag}, seat #${room.me.slot}` : ""}</p>
+    </Slide>
   );
 }
 function RoomRecapI({ room }) {
   let flips = { A: [], B: [], C: [] };
   try { const v = JSON.parse(sessionStorage.getItem("pf-flips-" + room.session)); if (v && v.A) flips = v; } catch (e) {}
-  const COL = { A: C.teal, B: C.violet, C: C.gold }, NAME = { A: "A · fair", B: "B · mystery", C: "C · your own" };
-  const rows = ["A", "B", "C"].map((r) => { const s = flips[r] || [], n = s.length, h = s.filter((v) => v).length, p = n ? h / n : null; return { r, n, h, p }; });
-  const dots = rows.filter((x) => x.p !== null).map((x) => ({ p: x.p, w: sigOf(x.p), color: COL[x.r] }));
+  const COL = { A: C.teal, B: "#C9A3D6", C: KICK_DK };
+  const rows = ["A", "B", "C"].map((r) => { const s = flips[r] || [], n = s.length, h = s.filter((v) => v).length; return { r, p: n ? h / n : null }; });
+  const X = (p) => 40 + p * 440, Y = (w) => 270 - w * 440;
   return (
-    <div>
-      <p><strong>One number cannot tell luck from ignorance; two can.</strong> And the two draw a half-disk nobody ordered.</p>
-      <StatePlot showSemicircle scatter={dots} />
-      <div style={{ fontFamily: mono, fontSize: 12 }}>{rows.map((x) => <div key={x.r} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: `1px solid ${C.gridBold}` }}><span style={{ color: COL[x.r], fontWeight: 600 }}>{NAME[x.r]}</span><span>{x.p === null ? "no flips" : `p ${x.p.toFixed(2)} · bandwidth ${sigOf(x.p).toFixed(2)}`}</span></div>)}</div>
-      <Notice>Your three coins on the rim: each one fully known after ten flips. Rim: coins you know. Floor: the mystery coins, pooled to the centre. Inside: everything in between. Two doubts to carry into Act II: why <em>this</em> second number, and half of <em>what</em>?</Notice>
-    </div>
+    <Slide dark kicker="RECAP · ACT I · A COIN, HONESTLY KEPT" badges={<><Badge kind="dark">CLAIMS № 1 · 2 · 3 · SIGHTED</Badge><Badge kind="aha-dark">✳ THREE AHA MOMENTS</Badge></>}
+      title={<>One number cannot tell luck from ignorance: <em style={{ color: PALE, fontStyle: "normal" }}>two numbers can</em>. And the two draw a half-disk nobody ordered.</>} titleSize={25}
+      lines={[Soft(<span style={{ fontFamily: mono, fontSize: 11, letterSpacing: 2.5, color: KICK_DK }}>TWO DOUBTS, STILL OPEN</span>), Soft(<>(i) Why bandwidth, of all second numbers?</>), Soft(<>(ii) Half a disk: half of what?</>)]}>
+      <svg viewBox="0 0 520 300" style={{ width: "100%", display: "block" }}>
+        <path d="M 40 270 A 220 220 0 0 1 480 270 Z" fill={PALE} fillOpacity="0.08" />
+        <path d="M 40 270 A 220 220 0 0 1 480 270" fill="none" stroke={KICK_DK} strokeWidth="4" strokeDasharray="10 9" />
+        <line x1="40" y1="270" x2="480" y2="270" stroke={PALE} strokeWidth="2.5" />
+        <line x1="260" y1="160" x2="260" y2="270" stroke={PALE} strokeWidth="1.5" strokeDasharray="4 6" opacity="0.6" />
+        <circle cx="40" cy="270" r="9" fill={PALE} /><circle cx="480" cy="270" r="9" fill={PALE} /><circle cx="260" cy="270" r="9" fill="#FFFFFF" stroke={PALE} strokeWidth="3" />
+        {rows.filter((x) => x.p !== null).map((x) => <g key={x.r}><circle cx={X(x.p)} cy={Y(sigOf(x.p))} r="11" fill={COL[x.r]} stroke="#fff" strokeWidth="2" /><text x={X(x.p)} y={Y(sigOf(x.p)) - 18} textAnchor="middle" fontFamily={mono} fontSize="15" letterSpacing="2" fill={COL[x.r]}>{x.r}</text></g>)}
+        <text x="260" y="26" textAnchor="middle" fontFamily={mono} fontSize="17" letterSpacing="2" fill={KICK_DK}>RIM · LUCK</text>
+        <text x="330" y="225" textAnchor="middle" fontFamily={mono} fontSize="17" letterSpacing="2" fill="#FFFFFF" opacity="0.85">INSIDE · BOTH</text>
+        <text x="260" y="296" textAnchor="middle" fontFamily={mono} fontSize="17" letterSpacing="2" fill={PALE}>FLOOR · IGNORANCE</text>
+      </svg>
+      <p style={{ fontFamily: mono, fontSize: 10.5, letterSpacing: 1.5, color: PALE, margin: "8px 0 0", textAlign: "center" }}>odds across · bandwidth up · A, B, C: your three coins after ten flips</p>
+    </Slide>
   );
 }
 function RoomRecapII({ room }) {
@@ -4465,23 +4695,23 @@ function RoomStepHunt({ room, test }) {
 
 // the deck's slides, by their label (room.js publishes state.slide): one participant view per slide
 const SLIDES = {
-  "Title": { t: "Welcome", c: RoomStepWelcome },
-  "How the workshop works": { t: "How this works", c: RoomStepHow },
-  "Film 1": { t: "Film 1", c: RoomStepFilm, p: { n: 1 } },
-  "Film 2": { t: "Film 2", c: RoomStepFilm, p: { n: 2 } },
-  "Four claims": { t: "Four claims", c: RoomStepClaims },
-  "Act I divider": { t: "Act I · coins", c: RoomStepAct, p: { act: 1 } },
-  "Scene 1 · round A": { t: "Round A · the fair coin", c: RoomStep1 },
-  "Scene 1 · round B": { t: "Round B · the mystery coin", c: RoomStep1 },
-  "Scene 1 · round C": { t: "Round C · your own coin", c: RoomStep1 },
-  "Scene 2 · two sources": { t: "Two sources of uncertainty", c: RoomStep2 },
-  "Scene 2 · two words": { t: "Two words for not-knowing", c: RoomStep2, p: { words: true } },
-  "Scene 3 · bandwidth": { t: "The second number", c: RoomStep3 },
-  "Scene 4 · the circle": { t: "The Bernoulli circle", c: RoomStep4 },
-  "Scene 4 · mixing beliefs": { t: "Mixing beliefs", c: RoomStepMix },
-  "Scene 5 · the needle": { t: "The needle", c: RoomStep5 },
-  "Act I recap": { t: "Recap", c: RoomRecapI },
-  "Act II divider": { t: "Act II · light", c: RoomStepAct, p: { act: 2 } },
+  "Title": { s: true, dark: true, c: RoomStepWelcome },
+  "How the workshop works": { s: true, c: RoomStepHow },
+  "Film 1": { s: true, dark: true, c: RoomStepFilm, p: { n: 1 } },
+  "Film 2": { s: true, dark: true, c: RoomStepFilm, p: { n: 2 } },
+  "Four claims": { s: true, c: RoomStepClaims },
+  "Act I divider": { s: true, dark: true, c: RoomStepAct, p: { act: 1 } },
+  "Scene 1 · round A": { s: true, c: RoomFlip },
+  "Scene 1 · round B": { s: true, c: RoomFlip },
+  "Scene 1 · round C": { s: true, c: RoomFlip },
+  "Scene 2 · two sources": { s: true, c: RoomTwoSources },
+  "Scene 2 · two words": { s: true, c: RoomTwoSources, p: { words: true } },
+  "Scene 3 · bandwidth": { s: true, c: RoomBandwidth },
+  "Scene 4 · the circle": { s: true, c: RoomCircle },
+  "Scene 4 · mixing beliefs": { s: true, c: RoomMixing },
+  "Scene 5 · the needle": { s: true, c: RoomNeedle },
+  "Act I recap": { s: true, dark: true, c: RoomRecapI },
+  "Act II divider": { s: true, dark: true, c: RoomStepAct, p: { act: 2 } },
   "Scene 7 · lamplight": { t: "The lamp alone", c: RoomStepBench, p: { solo: true } },
   "Scene 7 · sunglasses": { t: "Two sheets", c: RoomStepBench },
   "Scene 7d · a third sheet": { t: "A third sheet", c: RoomStepThird },
@@ -4496,7 +4726,7 @@ const SLIDES = {
   "Scene 13 · which end": { t: "Which end?", c: RoomStepAsk },
   "Scene 13 · why the sign hides": { t: "Why the sign hides", c: RoomStepSignView },
   "Act II recap": { t: "Recap", c: RoomRecapII },
-  "Act III divider": { t: "Act III · glass", c: RoomStepAct, p: { act: 3 } },
+  "Act III divider": { s: true, dark: true, c: RoomStepAct, p: { act: 3 } },
   "Scene 14a · striped light": { t: "Striped light", c: RoomStepGlass, p: { preset: "striped" } },
   "Scene 14 · the turning glass": { t: "The turning glass", c: RoomStepGlass, p: { preset: "turn" } },
   "Scene 14c · the glass": { t: "Fresnel's glass", c: RoomStepGlass, p: { preset: "glass" } },
@@ -4528,29 +4758,28 @@ function RoomApp() {
   const entry = label !== null ? SLIDES[label] : null;
   const RoomComp = entry ? entry.c : ROOM_STEPS[scene];
   const extraProps = entry && entry.p ? entry.p : {};
+  const modern = !!(entry && entry.s), dark = !!(entry && entry.dark && room && room.joined);
   const kicker = label ? label.split(" · ")[0].toUpperCase() : `SCENE ${scene}`;
   const title = entry ? entry.t : (label || SCENE_TITLES[scene] || "");
   const fallback = STEPS[SCENE_TO_STEP[scene] ?? 1];
   const Fallback = fallback.comp;
+  const ink = dark ? "#FFFFFF" : C.ink, sub = dark ? PALE : C.inkSoft;
   return (
-    <div style={{ minHeight: "100vh", background: C.paper, color: C.ink }}>
+    <div style={{ minHeight: "100vh", background: dark ? NAVY : C.paper, backgroundImage: dark ? GRID_DK : "none", color: ink }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;600&display=swap');
         * { box-sizing: border-box; }
         p { line-height: 1.6; font-size: 15px; }
       `}</style>
-      <div style={{ maxWidth: 660, margin: "0 auto", padding: "22px 18px 60px", fontFamily: serif }}>
-        <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+      <div style={{ maxWidth: 660, margin: "0 auto", padding: "18px 18px 60px", fontFamily: serif }}>
+        <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{
-              width: 36, height: 36, borderRadius: "50%", background: `radial-gradient(circle at 35% 30%, #FFAE5E, ${C.gold})`,
-              border: `2px solid ${C.ink}`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: mono, fontWeight: 600, color: "#fff", fontSize: 20,
+              width: 32, height: 32, borderRadius: "50%", background: `radial-gradient(circle at 35% 30%, #FFAE5E, ${C.gold})`,
+              border: `2px solid ${dark ? "#FFFFFF" : C.ink}`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: mono, fontWeight: 600, color: "#fff", fontSize: 17,
             }}>{room && room.tag ? room.tag : "H"}</div>
-            <div>
-              <div style={{ fontSize: 17, fontWeight: 700, letterSpacing: -0.3 }}>Build your own qubit</div>
-              <div style={{ fontFamily: mono, fontSize: 11, color: C.inkSoft }}>
-                session {session}{room && room.me ? ` · seat #${room.me.slot}` : ""}
-              </div>
+            <div style={{ fontFamily: mono, fontSize: 10.5, letterSpacing: 1.5, color: sub }}>
+              {`SESSION ${session}`}{room && room.me ? ` · SEAT #${room.me.slot}` : ""}
             </div>
           </div>
           {room && <RoomStatus status={room.status} />}
@@ -4560,6 +4789,8 @@ function RoomApp() {
           <Notice>Room mode needs the room scripts (../room/relay-transport.js and room.js). Open the tutorial without ?session= to run it standalone.</Notice>
         ) : !room.joined ? (
           <RoomJoin room={room} />
+        ) : modern ? (
+          <RoomComp key={label} room={room} {...extraProps} />
         ) : (
           <>
             <h2 style={{ fontSize: 21, fontWeight: 600, margin: "0 0 10px" }}>
@@ -4584,7 +4815,6 @@ function RoomApp() {
 function App() {
   return roomSession() ? <RoomApp /> : <BuildYourOwnQubit />;
 }
-export default App;
 
 function BuildYourOwnQubit() {
   const [step, setStep] = useState(0);
