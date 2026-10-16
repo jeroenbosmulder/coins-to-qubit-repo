@@ -249,6 +249,7 @@
         if (!ds) return;
         var patch = { collect: false };                       // every slide opens paused: nothing is collected until ▶
         if (ds.scene !== undefined && !isNaN(Number(ds.scene))) patch.scene = Number(ds.scene);
+        if (typeof ds.label === 'string') patch.slide = ds.label;   // the slide's label: the participant page keys its views on it
         Object.keys(ds).forEach(function (k) {
           if (k.length > 2 && k.slice(0, 2) === 'pf') {
             var key = k.charAt(2).toLowerCase() + k.slice(3), v = ds[k];
@@ -353,8 +354,11 @@
       store.update(function (c) { var m = shallowMerge(c.memo); if (v === undefined) delete m[k]; else m[k] = v; return shallowMerge(c, { memo: m }); });
     }
 
+    // mirror: state handed over by the presenter window (presenter-kit, same browser) ahead of the relay
+    function applyState(patch) { if (role !== 'mirror') return; store.update(function (c) { return shallowMerge(c, { state: shallowMerge(c.state, patch || {}) }); }); }
+
     var api = {
-      session: session, role: role, transport: t,
+      session: session, role: role, transport: t, applyState: applyState,
       get: store.get, subscribe: store.subscribe,
       publish: publish, bindDeck: bindDeck, tallies: tallies, beams: beams, rounds: rounds, noises: noises, resetRound: resetRound, forgetPhones: forgetPhones, setMemo: setMemo, lightRound: lightRound, resetLightRound: resetLightRound,
       participantUrl: function () { return participantUrl(session); },
