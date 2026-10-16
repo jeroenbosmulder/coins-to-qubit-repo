@@ -57,6 +57,34 @@
     if (window.React && !window.React.__pkPatched) patchReact(window.React);
   }, 100);
 
+  /* ── room memo sync (figure histories kept in the Room store, outside React state) ──
+     presenter: every memo key is broadcast when it changes; mirror: applied with force. */
+  var roomStore = function () { return window.Room && window.Room.presenter ? window.Room.presenter() : null; };
+  var memoLast = {}, memoPending = {}, memoT = null;
+  function pushMemo(all) {
+    var p = roomStore(); if (!p) return;
+    var m = p.get().memo || {};
+    Object.keys(m).forEach(function (k) {
+      var j; try { j = JSON.stringify(m[k]); } catch (err) { return; }
+      if (j === undefined) return;
+      if (all || j !== memoLast[k]) { memoLast[k] = j; bc.postMessage({ pkMemo: k, json: j }); }
+    });
+    Object.keys(memoLast).forEach(function (k) { if (!(k in m)) { delete memoLast[k]; bc.postMessage({ pkMemo: k, del: true }); } });
+  }
+  function applyMemo(k, d) {
+    var p = roomStore(); if (!p) { memoPending[k] = d; return; }
+    if (d.del) return void p.setMemo(k, undefined, true);
+    var v; try { v = JSON.parse(d.json); } catch (err) { return; }
+    p.setMemo(k, v, true);
+  }
+  var memoPoll = setInterval(function () {
+    var p = roomStore(); if (!p) return;
+    clearInterval(memoPoll);
+    if (isMirror) { Object.keys(memoPending).forEach(function (k) { applyMemo(k, memoPending[k]); }); memoPending = {}; return; }
+    p.subscribe(function () { if (memoT) return; memoT = setTimeout(function () { memoT = null; pushMemo(false); }, 30); });
+    pushMemo(true);
+  }, 100);
+
   if (isMirror) {
     /* ── mirror window: clean view, apply everything ── */
     var tidy = function () {
@@ -72,6 +100,7 @@
         if (registry[d.pkState]) applyJson(d.pkState, d.json);
         else pending[d.pkState] = d.json;
       }
+      if (typeof d.pkMemo === 'string') applyMemo(d.pkMemo, d);
       if (typeof d.index === 'number') { var s = stage(); if (s && s.goTo) s.goTo(d.index); }
       if (typeof d.scroll === 'number') window.scrollTo(0, d.scroll);
     });
@@ -83,6 +112,7 @@
   bc.addEventListener('message', function (e) {
     if (e.data && e.data.hello) {
       Object.keys(cache).forEach(function (k) { bc.postMessage({ pkState: +k, json: cache[k] }); });
+      pushMemo(true);
       if (stage()) bc.postMessage({ index: lastIndex });
     }
   });
